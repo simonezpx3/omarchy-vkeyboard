@@ -46,7 +46,7 @@ BarWidget {
   property bool sysShiftsToggle: false
 
   // Virtual Keyboard Window Dimensions, Position & Opacity
-  property var availableFormats: ["60%", "65%", "75%", "80% (TKL)", "Full Size", "Apple Magic Keyboard"]
+  property var availableFormats: ["60%", "65%", "75%", "80% (TKL)", "Full Size", "macOS Layout"]
   property string currentFormat: "75%"
   property int oskWidth: 960
   property int oskHeight: 285
@@ -71,7 +71,8 @@ BarWidget {
   }
 
   // Format Helper Flags
-  readonly property bool isApple: root.currentFormat === "Apple Magic Keyboard"
+  readonly property bool isMac: root.currentFormat === "macOS Layout" || root.currentFormat === "Apple Magic Keyboard"
+  readonly property bool isApple: isMac
   readonly property bool hasFRow: root.currentFormat !== "60%" && root.currentFormat !== "65%"
   readonly property bool is65: root.currentFormat === "65%"
   readonly property bool is75: root.currentFormat === "75%"
@@ -86,7 +87,7 @@ BarWidget {
     if (fmt === "75%") return 960;
     if (fmt === "80% (TKL)") return 1120;
     if (fmt === "Full Size") return 1380;
-    if (fmt === "Apple Magic Keyboard") return 960;
+    if (fmt === "macOS Layout" || fmt === "Apple Magic Keyboard") return 960;
     return 960;
   }
 
@@ -553,7 +554,7 @@ BarWidget {
             { id: "75%", name: "75% (Kompaktní + F-řada)" },
             { id: "80% (TKL)", name: "80% (TKL Tenkeyless)" },
             { id: "Full Size", name: "Full Size (100% + Numpad)" },
-            { id: "Apple Magic Keyboard", name: "Apple Magic Keyboard (Mac)" }
+            { id: "macOS Layout", name: "macOS Layout (Unix/Mac)" }
           ]
 
           Rectangle {
@@ -577,7 +578,7 @@ BarWidget {
               }
               Item { Layout.fillWidth: true }
               Text {
-                text: modelData.id === "Apple Magic Keyboard" ? "Mac" : modelData.id
+                text: modelData.id === "macOS Layout" ? "macOS" : modelData.id
                 font.family: root.monoFont.family
                 font.pixelSize: 9
                 color: "#6b7280"
@@ -1435,7 +1436,7 @@ BarWidget {
             Layout.fillHeight: true
             spacing: 4
 
-            KeyBtn { textNormal: root.isApple ? "esc" : "ESC"; keyCommand: "Escape"; customWidth: root.isApple ? 65 : 48; customColor: root.cyanColor }
+            KeyBtn { textNormal: root.isMac ? "esc" : "ESC"; keyCommand: "Escape"; customWidth: root.isMac ? 65 : 48; customColor: root.cyanColor }
 
             KeyBtn { textNormal: "F1"; keyCommand: "F1" }
             KeyBtn { textNormal: "F2"; keyCommand: "F2" }
@@ -1456,8 +1457,8 @@ BarWidget {
             KeyBtn { textNormal: "F11"; keyCommand: "F11" }
             KeyBtn { textNormal: "F12"; keyCommand: "F12" }
 
-            // Apple Magic Right Lock
-            KeyBtn { visible: root.isApple; textNormal: "⚲"; keyCommand: "Escape"; customWidth: 46; customColor: root.accentColor }
+            // macOS Layout Right Lock
+            KeyBtn { visible: root.isMac; textNormal: "⚲"; keyCommand: "Escape"; customWidth: 46; customColor: root.accentColor }
 
             // 75% Right Del
             KeyBtn { visible: root.is75; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
@@ -1561,9 +1562,9 @@ BarWidget {
               customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
-              textNormal: root.isApple ? "delete" : "⌫ BKSP"
+              textNormal: root.isMac ? "delete" : "⌫ BKSP"
               keyCommand: "BackSpace"
-              customWidth: root.isApple ? 82 : 88
+              customWidth: root.isMac ? 82 : 88
               customColor: root.warnColor
             }
 
@@ -1593,7 +1594,7 @@ BarWidget {
             Layout.fillHeight: true
             spacing: 4
 
-            KeyBtn { textNormal: root.isApple ? "tab" : "⇥ TAB"; keyCommand: "Tab"; customWidth: root.isApple ? 65 : 70; customColor: root.cyanColor }
+            KeyBtn { textNormal: root.isMac ? "tab" : "⇥ TAB"; keyCommand: "Tab"; customWidth: root.isMac ? 65 : 70; customColor: root.cyanColor }
             KeyBtn { textNormal: "q" }
             KeyBtn { textNormal: "w" }
             KeyBtn { textNormal: "e" }
@@ -1635,8 +1636,8 @@ BarWidget {
             spacing: 4
 
             KeyBtn {
-              textNormal: root.isApple ? "caps lock" : "⇪ CAPS"
-              customWidth: root.isApple ? 75 : 85
+              textNormal: root.isMac ? "caps lock" : "⇪ CAPS"
+              customWidth: root.isMac ? 75 : 85
               isModifier: true
               modifierName: "caps"
               isActive: root.capsActive
@@ -1654,9 +1655,9 @@ BarWidget {
             KeyBtn { textNormal: root.currentLayout === "CS" ? "ů" : ";"; textShift: root.currentLayout === "CS" ? "\"" : ":" }
             KeyBtn { textNormal: root.currentLayout === "CS" ? "\"" : "'"; textShift: root.currentLayout === "CS" ? "!" : "\"" }
             KeyBtn {
-              textNormal: root.isApple ? "return" : "↵ ENTER"
+              textNormal: root.isMac ? "return" : "↵ ENTER"
               keyCommand: "Return"
-              customWidth: root.isApple ? 90 : 98
+              customWidth: root.isMac ? 90 : 98
               customColor: "#ffffff"
               customBg: Qt.rgba(52/255, 211/255, 153/255, 0.22)
             }
@@ -1685,8 +1686,8 @@ BarWidget {
             spacing: 4
 
             KeyBtn {
-              textNormal: root.isApple ? "shift (L)" : "⇧ SHIFT"
-              customWidth: root.isApple ? 95 : 105
+              textNormal: root.isMac ? "shift (L)" : "⇧ SHIFT"
+              customWidth: root.isMac ? 95 : 105
               isModifier: true
               modifierName: "shift_l"
               isActive: root.shiftLActive
@@ -1703,8 +1704,8 @@ BarWidget {
             KeyBtn { textNormal: "."; textShift: root.currentLayout === "CS" ? ":" : ">" }
             KeyBtn { textNormal: root.currentLayout === "CS" ? "-" : "/"; textShift: root.currentLayout === "CS" ? "_" : "?" }
             KeyBtn {
-              textNormal: root.isApple ? "shift (R)" : (root.sysShiftsToggle ? "SHIFT ⇧ (TOGGLE)" : "SHIFT ⇧")
-              customWidth: (root.is65 || root.is75 || root.isApple) ? 75 : 110
+              textNormal: root.isMac ? "shift (R)" : (root.sysShiftsToggle ? "SHIFT ⇧ (TOGGLE)" : "SHIFT ⇧")
+              customWidth: (root.is65 || root.is75 || root.isMac) ? 75 : 110
               isModifier: true
               modifierName: "shift_r"
               isActive: root.shiftRActive
@@ -1715,8 +1716,8 @@ BarWidget {
             KeyBtn { visible: root.is65 || root.is75; textNormal: "▲"; keyCommand: "Up"; customWidth: 42 }
             KeyBtn { visible: root.is65 || root.is75; textNormal: "End"; keyCommand: "End"; customWidth: 46 }
 
-            // Extensions: Apple Magic Keyboard Up Arrow
-            KeyBtn { visible: root.isApple; textNormal: "▲"; keyCommand: "Up"; customWidth: 42 }
+            // Extensions: macOS Layout Up Arrow
+            KeyBtn { visible: root.isMac; textNormal: "▲"; keyCommand: "Up"; customWidth: 42 }
 
             // Extensions: 80% TKL & Full Size Inverted-T Up Arrow
             Item { visible: root.hasNavCluster; width: 12 }
@@ -1740,9 +1741,9 @@ BarWidget {
             Layout.fillHeight: true
             spacing: 4
 
-            // Apple Magic Keyboard Modifiers
+            // macOS Layout Modifiers
             KeyBtn {
-              visible: root.isApple
+              visible: root.isMac
               textNormal: "fn"
               customWidth: 50
               isModifier: true
@@ -1751,7 +1752,7 @@ BarWidget {
               customColor: root.fnActive ? root.cyanColor : root.keyText
             }
             KeyBtn {
-              visible: root.isApple
+              visible: root.isMac
               textNormal: "⌃ control"
               customWidth: 65
               isModifier: true
@@ -1760,7 +1761,7 @@ BarWidget {
               customColor: root.ctrlLActive ? root.accentColor : root.keyText
             }
             KeyBtn {
-              visible: root.isApple
+              visible: root.isMac
               textNormal: "⌥ option (L)"
               customWidth: 70
               isModifier: true
@@ -1768,11 +1769,11 @@ BarWidget {
               isActive: root.altLActive
               customColor: root.altLActive ? root.accentColor : root.keyText
             }
-            KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
-            KeyBtn { visible: root.isApple; textNormal: "SPACE"; keyCommand: "space"; Layout.fillWidth: true; customColor: "#9ca3af" }
-            KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
+            KeyBtn { visible: root.isMac; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
+            KeyBtn { visible: root.isMac; textNormal: "SPACE"; keyCommand: "space"; Layout.fillWidth: true; customColor: "#9ca3af" }
+            KeyBtn { visible: root.isMac; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
             KeyBtn {
-              visible: root.isApple
+              visible: root.isMac
               textNormal: "⌥ option (R)"
               customWidth: 70
               isModifier: true
@@ -1780,14 +1781,14 @@ BarWidget {
               isActive: root.altRActive
               customColor: root.altRActive ? root.accentColor : root.keyText
             }
-            KeyBtn { visible: root.isApple; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout"; customColor: root.warnColor; customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12) }
-            KeyBtn { visible: root.isApple; textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
-            KeyBtn { visible: root.isApple; textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
-            KeyBtn { visible: root.isApple; textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
+            KeyBtn { visible: root.isMac; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout"; customColor: root.warnColor; customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12) }
+            KeyBtn { visible: root.isMac; textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
+            KeyBtn { visible: root.isMac; textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
+            KeyBtn { visible: root.isMac; textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
 
             // Standard Modifiers (60%, 65%, 75%, 80% TKL, Full Size)
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: root.sysSwapLaltLctl ? "Alt (L)" : "Ctrl (L)"
               customWidth: 60
               isModifier: true
@@ -1796,7 +1797,7 @@ BarWidget {
               customColor: (root.sysSwapLaltLctl ? root.altLActive : root.ctrlLActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: "Super"
               customIcon: "\ue900"
               customIconFont: "omarchy"
@@ -1806,7 +1807,7 @@ BarWidget {
               isActive: root.superActive
             }
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: root.sysSwapLaltLctl ? "Ctrl (L)" : "Alt (L)"
               customWidth: 60
               isModifier: true
@@ -1817,7 +1818,7 @@ BarWidget {
 
             // Spacebar
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: "SPACE"
               keyCommand: "space"
               Layout.fillWidth: true
@@ -1826,7 +1827,7 @@ BarWidget {
 
             // Right Modifiers (AltGr for European/Czech special characters, RAlt for US)
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: root.sysHasAltGr ? "AltGr" : "Alt (R)"
               customWidth: 55
               isModifier: true
@@ -1835,7 +1836,7 @@ BarWidget {
               customColor: (root.sysHasAltGr ? root.altGrActive : root.altRActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: "Fn"
               customWidth: (root.currentFormat === "60%" || root.hasNavCluster) ? 60 : 50
               isModifier: true
@@ -1844,7 +1845,7 @@ BarWidget {
               customColor: root.fnActive ? root.cyanColor : root.keyText
             }
             KeyBtn {
-              visible: !root.isApple
+              visible: !root.isMac
               textNormal: "󰌌 " + root.currentLayout
               customWidth: 75
               isModifier: true
@@ -1853,7 +1854,7 @@ BarWidget {
               customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12)
             }
             KeyBtn {
-              visible: !root.isApple && (root.currentFormat === "60%" || root.hasNavCluster)
+              visible: !root.isMac && (root.currentFormat === "60%" || root.hasNavCluster)
               textNormal: root.sysRctrlIsCompose ? "Comp (R)" : "Ctrl (R)"
               customWidth: 55
               isModifier: true
@@ -1863,21 +1864,21 @@ BarWidget {
             }
 
             // Arrow Keys for 65% and 75%
-            KeyBtn { visible: !root.isApple && (root.is65 || root.is75); textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
-            KeyBtn { visible: !root.isApple && (root.is65 || root.is75); textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
-            KeyBtn { visible: !root.isApple && (root.is65 || root.is75); textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
+            KeyBtn { visible: !root.isMac && (root.is65 || root.is75); textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
+            KeyBtn { visible: !root.isMac && (root.is65 || root.is75); textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
+            KeyBtn { visible: !root.isMac && (root.is65 || root.is75); textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
 
             // Arrow Keys for 80% TKL and Full Size
-            Item { visible: !root.isApple && root.hasNavCluster; width: 12 }
-            KeyBtn { visible: !root.isApple && root.hasNavCluster; textNormal: "◄"; keyCommand: "Left"; customWidth: 46 }
-            KeyBtn { visible: !root.isApple && root.hasNavCluster; textNormal: "▼"; keyCommand: "Down"; customWidth: 46 }
-            KeyBtn { visible: !root.isApple && root.hasNavCluster; textNormal: "►"; keyCommand: "Right"; customWidth: 46 }
+            Item { visible: !root.isMac && root.hasNavCluster; width: 12 }
+            KeyBtn { visible: !root.isMac && root.hasNavCluster; textNormal: "◄"; keyCommand: "Left"; customWidth: 46 }
+            KeyBtn { visible: !root.isMac && root.hasNavCluster; textNormal: "▼"; keyCommand: "Down"; customWidth: 46 }
+            KeyBtn { visible: !root.isMac && root.hasNavCluster; textNormal: "►"; keyCommand: "Right"; customWidth: 46 }
 
             // Full Size Numpad Bottom Row
-            Item { visible: !root.isApple && root.hasNumpad; width: 12 }
-            KeyBtn { visible: !root.isApple && root.hasNumpad; textNormal: "0"; keyCommand: "KP_0"; customWidth: 92 }
-            KeyBtn { visible: !root.isApple && root.hasNumpad; textNormal: "."; keyCommand: "KP_Decimal"; customWidth: 44 }
-            Item { visible: !root.isApple && root.hasNumpad; width: 44 }
+            Item { visible: !root.isMac && root.hasNumpad; width: 12 }
+            KeyBtn { visible: !root.isMac && root.hasNumpad; textNormal: "0"; keyCommand: "KP_0"; customWidth: 92 }
+            KeyBtn { visible: !root.isMac && root.hasNumpad; textNormal: "."; keyCommand: "KP_Decimal"; customWidth: 44 }
+            Item { visible: !root.isMac && root.hasNumpad; width: 44 }
           }
         }
 
