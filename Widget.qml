@@ -1182,7 +1182,10 @@ BarWidget {
           RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            Layout.preferredHeight: 22
+            Layout.fillHeight: false
+            Layout.minimumHeight: 24
+            Layout.preferredHeight: 24
+            Layout.maximumHeight: 24
             spacing: 6
 
             Text {
@@ -1303,7 +1306,9 @@ BarWidget {
             // Interactive Header Spacer (Drag LMB to Move, RMB to Resize)
             Item {
               Layout.fillWidth: true
-              Layout.fillHeight: true
+              Layout.fillHeight: false
+              Layout.preferredHeight: 24
+              Layout.maximumHeight: 24
 
               MouseArea {
                 anchors.fill: parent
@@ -1339,6 +1344,9 @@ BarWidget {
             Rectangle {
               implicitWidth: opacBadgeLabel.implicitWidth + 12
               implicitHeight: 20
+              Layout.preferredHeight: 20
+              Layout.maximumHeight: 20
+              Layout.alignment: Qt.AlignVCenter
               radius: 3
               color: opacBadgeMouse.containsMouse ? root.keyHover : root.keyBg
               border.width: 1
@@ -1369,6 +1377,9 @@ BarWidget {
             Rectangle {
               implicitWidth: fmtLabel.implicitWidth + 14
               implicitHeight: 20
+              Layout.preferredHeight: 20
+              Layout.maximumHeight: 20
+              Layout.alignment: Qt.AlignVCenter
               radius: 3
               color: fmtMouse.containsMouse ? root.keyHover : root.keyBg
               border.width: 1
@@ -1399,6 +1410,9 @@ BarWidget {
             Rectangle {
               implicitWidth: 24
               implicitHeight: 20
+              Layout.preferredHeight: 20
+              Layout.maximumHeight: 20
+              Layout.alignment: Qt.AlignVCenter
               radius: 3
               color: resetMouse.containsMouse ? root.keyHover : root.keyBg
               border.width: 1
@@ -1425,6 +1439,9 @@ BarWidget {
             Rectangle {
               implicitWidth: 42
               implicitHeight: 20
+              Layout.preferredHeight: 20
+              Layout.maximumHeight: 20
+              Layout.alignment: Qt.AlignVCenter
               radius: 3
               color: escMouse.containsMouse ? root.keyHover : root.keyBg
               border.width: 1
@@ -1450,6 +1467,9 @@ BarWidget {
             Rectangle {
               implicitWidth: 26
               implicitHeight: 20
+              Layout.preferredHeight: 20
+              Layout.maximumHeight: 20
+              Layout.alignment: Qt.AlignVCenter
               radius: 3
               color: closeMouse.containsMouse ? "#ef4444" : Qt.rgba(1, 1, 1, 0.05)
               border.width: 1
@@ -1476,6 +1496,9 @@ BarWidget {
           // 1px Divider
           Rectangle {
             Layout.fillWidth: true
+            Layout.fillHeight: false
+            Layout.preferredHeight: 1
+            Layout.maximumHeight: 1
             implicitHeight: 1
             color: root.tuiBorder
           }
