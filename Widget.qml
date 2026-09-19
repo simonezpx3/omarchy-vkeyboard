@@ -266,11 +266,17 @@ BarWidget {
     if (root.ctrlActive) args.push("-M", "ctrl");
     if (root.altActive) args.push("-M", "alt");
     if (root.altGrActive) args.push("-M", "altgr");
-    if (root.shiftActive) args.push("-M", "shift");
+    // Only pass -M shift if part of a shortcut chord (e.g. Ctrl+Shift+C).
+    // For text typing, 'char' is ALREADY shifted by the layout (e.g. 'A', '!', '1').
+    if (root.shiftActive && (root.ctrlActive || root.altActive)) {
+      args.push("-M", "shift");
+    }
 
     args.push("--", char);
 
-    if (root.shiftActive) args.push("-m", "shift");
+    if (root.shiftActive && (root.ctrlActive || root.altActive)) {
+      args.push("-m", "shift");
+    }
     if (root.altGrActive) args.push("-m", "altgr");
     if (root.altActive) args.push("-m", "alt");
     if (root.ctrlActive) args.push("-m", "ctrl");
@@ -322,6 +328,12 @@ BarWidget {
     var targetKey = keyName;
     if (targetKey === "Prior") targetKey = "Page_Up";
     if (targetKey === "Next") targetKey = "Page_Down";
+
+    if (targetKey === "space" && !root.ctrlActive && !root.altActive && !root.superActive) {
+      Quickshell.execDetached(["wtype", "-s", "10", "--", " "]);
+      root.resetModifiers();
+      return;
+    }
 
     if (root.superActive) {
       var kMods = ["super"];
@@ -1025,7 +1037,8 @@ BarWidget {
               if (kBtn.keyCommand !== "") {
                 root.sendKey(kBtn.keyCommand);
               } else {
-                var ch = (root.shiftActive && kBtn.textShift !== "") ? kBtn.textShift : (root.capsActive || root.shiftActive ? kBtn.textNormal.toUpperCase() : kBtn.textNormal);
+                var isShifted = root.shiftActive || Boolean(mouse.modifiers & Qt.ShiftModifier);
+                var ch = (isShifted && kBtn.textShift !== "") ? kBtn.textShift : (root.capsActive || isShifted ? kBtn.textNormal.toUpperCase() : kBtn.textNormal);
                 root.sendChar(ch);
               }
             }
