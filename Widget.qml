@@ -945,12 +945,13 @@ BarWidget {
               Layout.alignment: Qt.AlignVCenter
               text: kBtn.customIcon
               font.family: kBtn.customIconFont !== "" ? kBtn.customIconFont : root.monoFont.family
-              font.pixelSize: Math.max(9, Math.round(root.baseKeyFontSize * 1.1))
+              font.pixelSize: Math.max(10, Math.round(root.baseKeyFontSize * (textNormal === "" ? 1.35 : 1.1)))
               color: isActive ? root.accentColor : kBtn.customColor
               verticalAlignment: Text.AlignVCenter
             }
 
             ColumnLayout {
+              visible: textNormal !== "" || textShift !== ""
               Layout.alignment: Qt.AlignVCenter
               Layout.maximumWidth: Math.max(8, kBtn.width - (kBtn.customIcon !== "" ? 18 : 4))
               spacing: 0
@@ -1921,10 +1922,10 @@ BarWidget {
             }
             KeyBtn {
               visible: !root.isMac
-              textNormal: "Super"
+              textNormal: ""
               customIcon: "\ue900"
               customIconFont: "omarchy"
-              customWidth: 72
+              customWidth: 60
               isModifier: true
               modifierName: "super"
               isActive: root.superActive
