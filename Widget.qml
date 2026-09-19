@@ -15,6 +15,10 @@ BarWidget {
   property string currentLayout: "EN"
   property int layoutIndex: 0
   property string layoutFullName: "English (US)"
+  property var availableLayouts: [
+    { "code": "EN", "index": 0, "name": "English (US)" },
+    { "code": "CS", "index": 1, "name": "Czech (QWERTY)" }
+  ]
   property bool oskOpen: false
 
   // Modifiers state for Virtual Keyboard (Independent Left & Right states)
@@ -279,9 +283,24 @@ BarWidget {
     if (root.superActive) root.superActive = false;
   }
 
-  function setLayout(code) {
-    var idx = code === "CS" ? "1" : "0";
-    Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", idx]);
+  function setLayout(target) {
+    if (typeof target === "number") {
+      Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "" + target]);
+    } else {
+      var foundIdx = -1;
+      for (var i = 0; i < root.availableLayouts.length; i++) {
+        if (root.availableLayouts[i].code === target || root.availableLayouts[i].tag === target) {
+          foundIdx = root.availableLayouts[i].index;
+          break;
+        }
+      }
+      if (foundIdx >= 0) {
+        Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "" + foundIdx]);
+      } else {
+        var idx = target === "CS" ? "1" : "0";
+        Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", idx]);
+      }
+    }
     refreshTimer.restart();
   }
 
@@ -303,6 +322,9 @@ BarWidget {
             root.currentLayout = info.code;
             root.layoutIndex = info.index !== undefined ? info.index : (info.code === "CS" ? 1 : 0);
             root.layoutFullName = info.name || (info.code === "CS" ? "Czech (QWERTY)" : "English (US)");
+            if (info.configured && info.configured.length > 0) {
+              root.availableLayouts = info.configured;
+            }
             if (info.sys_cfg) {
               root.sysHasAltGr = info.sys_cfg.has_altgr !== undefined ? info.sys_cfg.has_altgr : true;
               root.sysSwapLaltLctl = !!info.sys_cfg.swap_lalt_lctl;
@@ -444,7 +466,7 @@ BarWidget {
         RowLayout {
           Layout.fillWidth: true
           Text {
-            text: "󰌌 KEYBOARD SETTINGS"
+            text: "󰌌 KEYBOARD CONFIG"
             font.family: root.monoFont.family
             font.pixelSize: 11
             font.bold: true
@@ -452,9 +474,9 @@ BarWidget {
           }
           Item { Layout.fillWidth: true }
           Text {
-            text: "[R-CLICK / ESC]"
+            text: "[ESC]"
             font.family: root.monoFont.family
-            font.pixelSize: 9
+            font.pixelSize: 10
             color: "#6b7280"
           }
         }
@@ -462,96 +484,74 @@ BarWidget {
         // 1px Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
-        // Section: Layout
+        // Section: Active Layout
         Text {
-          text: "ROZLOŽENÍ KLÁVESNICE:"
+          text: "ACTIVE KEYBOARD LAYOUT:"
           font.family: root.monoFont.family
-          font.pixelSize: 9
+          font.pixelSize: 10
           font.bold: true
           color: "#9ca3af"
         }
 
-        // Option: Czech (QWERTY)
-        Rectangle {
-          Layout.fillWidth: true
-          implicitHeight: 26
-          color: csMouse.containsMouse ? root.keyHover : (root.currentLayout === "CS" ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.15) : "transparent")
-          border.width: 1
-          border.color: root.currentLayout === "CS" ? root.accentColor : "transparent"
-          radius: 3
+        Repeater {
+          model: root.availableLayouts
 
-          RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            Text {
-              text: (root.currentLayout === "CS" ? "● " : "○ ") + "Čeština (QWERTY)"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: root.currentLayout === "CS"
-              color: root.currentLayout === "CS" ? "#ffffff" : root.keyText
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 24
+            color: lMouse.containsMouse ? root.keyHover : (root.currentLayout === modelData.code ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.15) : "transparent")
+            radius: 2
+
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 6
+              anchors.rightMargin: 6
+              Text {
+                text: (root.currentLayout === modelData.code ? "● " : "○ ") + modelData.name
+                font.family: root.monoFont.family
+                font.pixelSize: 10
+                font.bold: root.currentLayout === modelData.code
+                color: root.currentLayout === modelData.code ? root.accentColor : root.keyText
+              }
+              Item { Layout.fillWidth: true }
+              Text {
+                text: modelData.code
+                font.family: root.monoFont.family
+                font.pixelSize: 10
+                font.bold: true
+                color: root.currentLayout === modelData.code ? root.accentColor : "#6b7280"
+              }
             }
-            Item { Layout.fillWidth: true }
-            Text { text: "CS"; font.family: root.monoFont.family; font.pixelSize: 9; color: root.warnColor; font.bold: true }
-          }
 
-          MouseArea {
-            id: csMouse
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: { root.setLayout("CS"); root.close(); }
-          }
-        }
-
-        // Option: English (US)
-        Rectangle {
-          Layout.fillWidth: true
-          implicitHeight: 26
-          color: enMouse.containsMouse ? root.keyHover : (root.currentLayout === "EN" ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.15) : "transparent")
-          border.width: 1
-          border.color: root.currentLayout === "EN" ? root.accentColor : "transparent"
-          radius: 3
-
-          RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            Text {
-              text: (root.currentLayout === "EN" ? "● " : "○ ") + "English (US)"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: root.currentLayout === "EN"
-              color: root.currentLayout === "EN" ? "#ffffff" : root.keyText
+            MouseArea {
+              id: lMouse
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.setLayout(modelData.code);
+                root.close();
+              }
             }
-            Item { Layout.fillWidth: true }
-            Text { text: "EN"; font.family: root.monoFont.family; font.pixelSize: 9; color: root.accentColor; font.bold: true }
-          }
-
-          MouseArea {
-            id: enMouse
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: { root.setLayout("EN"); root.close(); }
           }
         }
 
         // 1px Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
-        // Section: Formats
+        // Section: Keyboard Formats
         Text {
-          text: "FORMÁT / VELIKOST KLÁVESNICE:"
+          text: "KEYBOARD FORMAT / SIZE:"
           font.family: root.monoFont.family
-          font.pixelSize: 9
+          font.pixelSize: 10
           font.bold: true
           color: "#9ca3af"
         }
 
         Repeater {
           model: [
-            { id: "60%", name: "60% (Kompaktní)" },
-            { id: "65%", name: "65% (Kompaktní + Šipky)" },
-            { id: "75%", name: "75% (Kompaktní + F-řada)" },
+            { id: "60%", name: "60% (Compact)" },
+            { id: "65%", name: "65% (Compact + Arrows)" },
+            { id: "75%", name: "75% (Compact + F-Row)" },
             { id: "80% (TKL)", name: "80% (TKL Tenkeyless)" },
             { id: "Full Size", name: "Full Size (100% + Numpad)" },
             { id: "macOS Layout", name: "macOS Layout (Unix/Mac)" }
@@ -561,14 +561,12 @@ BarWidget {
             Layout.fillWidth: true
             implicitHeight: 24
             color: fmtItemMouse.containsMouse ? root.keyHover : (root.currentFormat === modelData.id ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.15) : "transparent")
-            radius: 3
-            border.width: 1
-            border.color: root.currentFormat === modelData.id ? root.accentColor : "transparent"
+            radius: 2
 
             RowLayout {
               anchors.fill: parent
-              anchors.leftMargin: 8
-              anchors.rightMargin: 8
+              anchors.leftMargin: 6
+              anchors.rightMargin: 6
               Text {
                 text: (root.currentFormat === modelData.id ? "● " : "○ ") + modelData.name
                 font.family: root.monoFont.family
@@ -580,7 +578,7 @@ BarWidget {
               Text {
                 text: modelData.id === "macOS Layout" ? "macOS" : modelData.id
                 font.family: root.monoFont.family
-                font.pixelSize: 9
+                font.pixelSize: 10
                 color: "#6b7280"
               }
             }
@@ -600,13 +598,13 @@ BarWidget {
         // 1px Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
-        // Section: Opacity Slider
+        // Section: Opacity Slider (Presets removed per user instruction)
         RowLayout {
           Layout.fillWidth: true
           Text {
-            text: "PRŮHLEDNOST / KRYTÍ:"
+            text: "WINDOW OPACITY / TRANSPARENCY:"
             font.family: root.monoFont.family
-            font.pixelSize: 9
+            font.pixelSize: 10
             font.bold: true
             color: "#9ca3af"
           }
@@ -683,73 +681,33 @@ BarWidget {
           }
         }
 
-        // Quick Opacity Presets
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 4
-
-          Repeater {
-            model: [
-              { label: "40%", val: 0.40 },
-              { label: "60%", val: 0.60 },
-              { label: "80%", val: 0.80 },
-              { label: "100%", val: 1.00 }
-            ]
-
-            Rectangle {
-              Layout.fillWidth: true
-              implicitHeight: 20
-              radius: 3
-              color: (Math.abs(root.oskOpacity - modelData.val) < 0.04) ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.25) : (presetMouse.containsMouse ? root.keyHover : root.keyBg)
-              border.width: 1
-              border.color: (Math.abs(root.oskOpacity - modelData.val) < 0.04) ? root.accentColor : root.keyBorder
-
-              Text {
-                anchors.centerIn: parent
-                text: modelData.label
-                font.family: root.monoFont.family
-                font.pixelSize: 9
-                font.bold: (Math.abs(root.oskOpacity - modelData.val) < 0.04)
-                color: (Math.abs(root.oskOpacity - modelData.val) < 0.04) ? root.accentColor : root.keyText
-              }
-
-              MouseArea {
-                id: presetMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.setOskOpacity(modelData.val)
-              }
-            }
-          }
-        }
-
         // 1px Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
-        // Section: System Hardware & XKB Config
+        // Section: System Hardware & XKB Profile
         RowLayout {
           Layout.fillWidth: true
           Text {
-            text: "SYSTÉM XKB / ROZLOŽENÍ:"
+            text: "SYSTEM HARDWARE & XKB PROFILE:"
             font.family: root.monoFont.family
-            font.pixelSize: 9
+            font.pixelSize: 10
             font.bold: true
             color: "#9ca3af"
           }
           Item { Layout.fillWidth: true }
           Text {
-            text: root.sysHasAltGr ? "AltGr: Aktivní" : "Alt: Standard"
+            text: root.sysHasAltGr ? "AltGr: Active" : "Alt: Standard"
             font.family: root.monoFont.family
-            font.pixelSize: 9
+            font.pixelSize: 10
             font.bold: true
             color: root.accentColor
           }
         }
         Text {
           Layout.fillWidth: true
-          text: "• Oddělené L/R modifikátory (Shift, Ctrl, Alt)" + (root.sysAltShiftToggle ? "\n• Zkratka Alt+Shift: Přepínání jazyka" : "") + (root.sysShiftsToggle ? "\n• Zkratka L+R Shift: Přepínání jazyka" : "") + (root.sysSwapLaltLctl ? "\n• Prohozeno: Levý Ctrl ↔ Levý Alt" : "") + (root.sysRctrlIsCompose ? "\n• Pravý Ctrl: Compose klávesa" : "")
+          text: "• Independent L/R modifiers (Shift, Ctrl, Alt)" + (root.sysAltShiftToggle ? "\n• Shortcut Alt+Shift: Switch Layout" : "") + (root.sysShiftsToggle ? "\n• Shortcut L+R Shift: Switch Layout" : "") + (root.sysSwapLaltLctl ? "\n• Swapped: Left Ctrl ↔ Left Alt" : "") + (root.sysRctrlIsCompose ? "\n• Right Ctrl: Compose key" : "")
           font.family: root.monoFont.family
-          font.pixelSize: 9
+          font.pixelSize: 10
           color: "#9ca3af"
           wrapMode: Text.WordWrap
         }
@@ -762,7 +720,7 @@ BarWidget {
           Layout.fillWidth: true
           implicitHeight: 26
           color: oskActionMouse.containsMouse ? root.keyHover : "transparent"
-          radius: 3
+          radius: 2
 
           RowLayout {
             anchors.fill: parent
@@ -775,7 +733,7 @@ BarWidget {
               color: root.accentColor
             }
             Text {
-              text: root.oskOpen ? "Skrýt virtuální klávesnici" : "Zobrazit virtuální klávesnici"
+              text: root.oskOpen ? "Hide Virtual Keyboard" : "Show Virtual Keyboard"
               font.family: root.monoFont.family
               font.pixelSize: 10
               color: root.keyText
@@ -784,7 +742,7 @@ BarWidget {
             Text {
               text: "[L-Click]"
               font.family: root.monoFont.family
-              font.pixelSize: 9
+              font.pixelSize: 10
               color: "#6b7280"
             }
           }
@@ -832,6 +790,15 @@ BarWidget {
         border.color: root.accentColor
         radius: 6
         opacity: root.oskOpacity
+
+        // Scalable Key Spacer Component for RowLayout Alignment
+        component KeySpacer: Item {
+          id: kSpacer
+          property real customWidth: 12
+          readonly property real widthScale: Math.max(0.65, Math.min(1.8, oskCard.width / 1020.0))
+          Layout.preferredWidth: Math.round(customWidth * widthScale)
+          Layout.fillHeight: true
+        }
 
         // Scalable Key Component
         component KeyBtn: Rectangle {
@@ -1443,14 +1410,14 @@ BarWidget {
             KeyBtn { textNormal: "F3"; keyCommand: "F3" }
             KeyBtn { textNormal: "F4"; keyCommand: "F4" }
 
-            Item { visible: root.hasNavCluster; width: 8 }
+            KeySpacer { visible: root.hasNavCluster; customWidth: 8 }
 
             KeyBtn { textNormal: "F5"; keyCommand: "F5" }
             KeyBtn { textNormal: "F6"; keyCommand: "F6" }
             KeyBtn { textNormal: "F7"; keyCommand: "F7" }
             KeyBtn { textNormal: "F8"; keyCommand: "F8" }
 
-            Item { visible: root.hasNavCluster; width: 8 }
+            KeySpacer { visible: root.hasNavCluster; customWidth: 8 }
 
             KeyBtn { textNormal: "F9"; keyCommand: "F9" }
             KeyBtn { textNormal: "F10"; keyCommand: "F10" }
@@ -1464,13 +1431,13 @@ BarWidget {
             KeyBtn { visible: root.is75; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
 
             // 80% TKL & Full Size Right Cluster (PrtSc, ScrLk, Pause)
-            Item { visible: root.hasNavCluster; width: 12 }
+            KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "PrtSc"; keyCommand: "Print"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "ScrLk"; keyCommand: "Scroll_Lock"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Pause"; keyCommand: "Pause"; customWidth: 46 }
 
             // Full Size Media/Numpad Top
-            Item { visible: root.hasNumpad; width: 12 }
+            KeySpacer { visible: root.hasNumpad; customWidth: 12 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Calc"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Mute"; keyCommand: "XF86AudioMute"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Vol-"; keyCommand: "XF86AudioLowerVolume"; customWidth: 44 }
@@ -1573,13 +1540,13 @@ BarWidget {
             KeyBtn { visible: root.is75; textNormal: "Home"; keyCommand: "Home"; customWidth: 46 }
 
             // Extensions: 80% TKL & Full Size
-            Item { visible: root.hasNavCluster; width: 12 }
+            KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Ins"; keyCommand: "Insert"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Home"; keyCommand: "Home"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "PgUp"; keyCommand: "Prior"; customWidth: 46 }
 
             // Extensions: Full Size Numpad
-            Item { visible: root.hasNumpad; width: 12 }
+            KeySpacer { visible: root.hasNumpad; customWidth: 12 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Num"; keyCommand: "Num_Lock"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "/"; keyCommand: "KP_Divide"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "*"; keyCommand: "KP_Multiply"; customWidth: 44 }
@@ -1614,13 +1581,13 @@ BarWidget {
             KeyBtn { visible: root.is75; textNormal: "PgUp"; keyCommand: "Prior"; customWidth: 46 }
 
             // Extensions: 80% TKL & Full Size
-            Item { visible: root.hasNavCluster; width: 12 }
+            KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
             KeyBtn { visible: root.hasNavCluster; textNormal: "End"; keyCommand: "End"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "PgDn"; keyCommand: "Next"; customWidth: 46 }
 
             // Extensions: Full Size Numpad
-            Item { visible: root.hasNumpad; width: 12 }
+            KeySpacer { visible: root.hasNumpad; customWidth: 12 }
             KeyBtn { visible: root.hasNumpad; textNormal: "7"; keyCommand: "KP_7"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "8"; keyCommand: "KP_8"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "9"; keyCommand: "KP_9"; customWidth: 44 }
