@@ -51,19 +51,14 @@ An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `w
 * Wayland normally isolates virtual keyboards from compositor-level root keybindings for security.
 * `simonez.vkeyboard` integrates an intelligent **System Shortcut Dispatcher** via `vkeyboard-ctl dispatch`:
   * Intercepts combinations when `SUPER` is active and resolves them against active Omarchy & Hyprland keybindings.
-  * **`SUPER + SPACE`** $\rightarrow$ Omarchy launcher / root menu.
-  * **`SUPER + RETURN`** $\rightarrow$ Terminal.
-  * **`SUPER + A`** $\rightarrow$ Arci AI Scratchpad (`arci-scratchpad`).
-  * **`SUPER + SHIFT + A`** $\rightarrow$ Arci Quick Explainer (`arci-quick-prompt`).
-  * **`SUPER + ALT + A`** $\rightarrow$ Arci Vision Explainer (`arci-vision-prompt`).
-  * **`SUPER + SHIFT + V`** $\rightarrow$ Arci Voice Assistant (`arci-voice`).
-  * **`SUPER + B`** $\rightarrow$ Beads Viewer (`beads-launcher`).
-  * **`SUPER + H`** $\rightarrow$ Gaming GPU Telemetry HUD (`gpu-workload osd`).
-  * **`SUPER + W`** $\rightarrow$ Close active window (`hl.dsp.window.close()`).
-  * **`SUPER + F`** $\rightarrow$ Toggle fullscreen.
-  * **`SUPER + T`** $\rightarrow$ Toggle floating/tiling.
+  * **`SUPER + SPACE`** $\rightarrow$ Application launcher / root menu.
+  * **`SUPER + RETURN`** $\rightarrow$ Default terminal emulator.
+  * **`SUPER + W`** $\rightarrow$ Close active window (`dispatch killactive`).
+  * **`SUPER + F`** $\rightarrow$ Toggle fullscreen window mode.
+  * **`SUPER + T`** $\rightarrow$ Toggle floating/tiling window layout.
   * **`SUPER + 1` .. `9`** $\rightarrow$ Switch workspace 1–9.
   * **`SUPER + C / V / X`** $\rightarrow$ Universal copy, paste, cut with automatic terminal detection.
+  * **Custom keybindings:** Automatically parses your Hyprland configuration and dispatches any custom user keybindings mapped to `SUPER`.
 
 ### Navigation Keys & Double-Shift Protection
 * Modernized keysyms: `Page_Up` and `Page_Down` (with fallback for legacy `Prior` / `Next`).
