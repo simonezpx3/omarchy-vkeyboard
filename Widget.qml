@@ -274,6 +274,30 @@ BarWidget {
       return;
     }
 
+    if (keyName === "Calc" || keyName === "XF86Calculator") {
+      Quickshell.execDetached(["omacalc"]);
+      Quickshell.execDetached(["wtype", "-k", "XF86Calculator"]);
+      return;
+    }
+
+    if (keyName === "XF86AudioMute") {
+      Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
+      Quickshell.execDetached(["wtype", "-k", "XF86AudioMute"]);
+      return;
+    }
+
+    if (keyName === "XF86AudioLowerVolume") {
+      Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"]);
+      Quickshell.execDetached(["wtype", "-k", "XF86AudioLowerVolume"]);
+      return;
+    }
+
+    if (keyName === "XF86AudioRaiseVolume") {
+      Quickshell.execDetached(["wpctl", "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SINK@", "5%+"]);
+      Quickshell.execDetached(["wtype", "-k", "XF86AudioRaiseVolume"]);
+      return;
+    }
+
     var args = ["wtype"];
     if (root.ctrlLActive) args.push("-P", "Control_L");
     if (root.ctrlRActive) args.push("-P", "Control_R");
@@ -1461,7 +1485,7 @@ BarWidget {
 
             // Full Size Media/Numpad Top
             KeySpacer { visible: root.hasNumpad; customWidth: 12 }
-            KeyBtn { visible: root.hasNumpad; textNormal: "Calc"; customWidth: 44 }
+            KeyBtn { visible: root.hasNumpad; textNormal: "Calc"; keyCommand: "Calc"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Mute"; keyCommand: "XF86AudioMute"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Vol-"; keyCommand: "XF86AudioLowerVolume"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "Vol+"; keyCommand: "XF86AudioRaiseVolume"; customWidth: 44 }
