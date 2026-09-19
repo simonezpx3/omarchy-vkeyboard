@@ -17,14 +17,33 @@ BarWidget {
   property string layoutFullName: "English (US)"
   property bool oskOpen: false
 
-  // Modifiers state for Virtual Keyboard
-  property bool shiftActive: false
+  // Modifiers state for Virtual Keyboard (Independent Left & Right states)
+  property bool shiftLActive: false
+  property bool shiftRActive: false
+  readonly property bool shiftActive: root.shiftLActive || root.shiftRActive
+
   property bool capsActive: false
-  property bool ctrlActive: false
-  property bool altActive: false
+
+  property bool ctrlLActive: false
+  property bool ctrlRActive: false
+  readonly property bool ctrlActive: root.ctrlLActive || root.ctrlRActive
+
+  property bool altLActive: false
+  property bool altRActive: false
+  readonly property bool altActive: root.altLActive || root.altRActive
   property bool altGrActive: false
+
   property bool superActive: false
   property bool fnActive: false
+
+  // System Keyboard Configuration (Auto-detected from Host OS / XKB / Hyprland)
+  property bool sysHasAltGr: true
+  property bool sysSwapLaltLctl: false
+  property bool sysSwapAltWin: false
+  property bool sysRctrlIsCompose: false
+  property bool sysAltShiftToggle: true
+  property bool sysCtrlShiftToggle: false
+  property bool sysShiftsToggle: false
 
   // Virtual Keyboard Window Dimensions, Position & Opacity
   property var availableFormats: ["60%", "65%", "75%", "80% (TKL)", "Full Size", "Apple Magic Keyboard"]
@@ -134,6 +153,15 @@ BarWidget {
     function cycleOpacity(): void { root.cycleOpacity(); }
     function toggleFn(): void { root.fnActive = !root.fnActive; }
     function toggleAltGr(): void { root.altGrActive = !root.altGrActive; }
+    function toggleShiftL(): void { root.shiftLActive = !root.shiftLActive; root.checkModifierCombos(); }
+    function toggleShiftR(): void { root.shiftRActive = !root.shiftRActive; root.checkModifierCombos(); }
+    function toggleShift(): void { root.shiftLActive = !root.shiftLActive; root.checkModifierCombos(); }
+    function toggleCtrlL(): void { root.ctrlLActive = !root.ctrlLActive; root.checkModifierCombos(); }
+    function toggleCtrlR(): void { root.ctrlRActive = !root.ctrlRActive; root.checkModifierCombos(); }
+    function toggleCtrl(): void { root.ctrlLActive = !root.ctrlLActive; root.checkModifierCombos(); }
+    function toggleAltL(): void { root.altLActive = !root.altLActive; root.checkModifierCombos(); }
+    function toggleAltR(): void { root.altRActive = !root.altRActive; root.checkModifierCombos(); }
+    function toggleAlt(): void { root.altLActive = !root.altLActive; root.checkModifierCombos(); }
   }
 
   // Unified CRT Monolithic Grid Theme (Strictly Derived from Omarchy System Theme)
@@ -154,56 +182,98 @@ BarWidget {
   readonly property int fontSmall: Math.max(10, Style.font && Style.font.bodySmall ? Style.font.bodySmall : 10)
   readonly property int fontBody: Math.max(12, Style.font && Style.font.body ? Style.font.body : 12)
 
-  // Keystroke & Command Execution
+  // Combination Checker for System XKB Shortcuts (e.g. Alt+Shift, Ctrl+Shift, Both Shifts)
+  function checkModifierCombos(): void {
+    if (root.sysShiftsToggle && root.shiftLActive && root.shiftRActive) {
+      root.shiftLActive = false;
+      root.shiftRActive = false;
+      root.cycleLayout();
+      return;
+    }
+    if (root.sysAltShiftToggle && (root.altLActive || root.altRActive) && (root.shiftLActive || root.shiftRActive)) {
+      root.altLActive = false;
+      root.altRActive = false;
+      root.shiftLActive = false;
+      root.shiftRActive = false;
+      root.cycleLayout();
+      return;
+    }
+    if (root.sysCtrlShiftToggle && (root.ctrlLActive || root.ctrlRActive) && (root.shiftLActive || root.shiftRActive)) {
+      root.ctrlLActive = false;
+      root.ctrlRActive = false;
+      root.shiftLActive = false;
+      root.shiftRActive = false;
+      root.cycleLayout();
+      return;
+    }
+  }
+
+  // Keystroke & Command Execution (Strict Left/Right Keysym & Level 3 AltGr Support)
   function sendChar(char) {
     if (!char) return;
-    var mods = [];
-    if (root.ctrlActive) mods.push("ctrl");
-    if (root.altActive) mods.push("alt");
-    if (root.altGrActive) mods.push("altgr");
-    if (root.superActive) mods.push("logo");
-    
-    // Construct wtype invocation
     var args = ["wtype"];
-    for (var i = 0; i < mods.length; i++) {
-      args.push("-M", mods[i]);
-    }
+    if (root.ctrlLActive) args.push("-P", "Control_L");
+    if (root.ctrlRActive) args.push("-P", "Control_R");
+    if (root.altLActive) args.push("-P", "Alt_L");
+    if (root.altRActive) args.push("-P", "Alt_R");
+    if (root.altGrActive) args.push("-M", "altgr");
+    if (root.superActive) args.push("-M", "logo");
+    if (root.shiftLActive) args.push("-P", "Shift_L");
+    if (root.shiftRActive) args.push("-P", "Shift_R");
+
     args.push("--", char);
-    for (var j = mods.length - 1; j >= 0; j--) {
-      args.push("-m", mods[j]);
-    }
+
+    if (root.shiftRActive) args.push("-p", "Shift_R");
+    if (root.shiftLActive) args.push("-p", "Shift_L");
+    if (root.superActive) args.push("-m", "logo");
+    if (root.altGrActive) args.push("-m", "altgr");
+    if (root.altRActive) args.push("-p", "Alt_R");
+    if (root.altLActive) args.push("-p", "Alt_L");
+    if (root.ctrlRActive) args.push("-p", "Control_R");
+    if (root.ctrlLActive) args.push("-p", "Control_L");
     Quickshell.execDetached(args);
 
     // Auto-release one-shot modifiers
-    if (root.shiftActive) root.shiftActive = false;
-    if (root.ctrlActive) root.ctrlActive = false;
-    if (root.altActive) root.altActive = false;
+    if (root.shiftLActive) root.shiftLActive = false;
+    if (root.shiftRActive) root.shiftRActive = false;
+    if (root.ctrlLActive) root.ctrlLActive = false;
+    if (root.ctrlRActive) root.ctrlRActive = false;
+    if (root.altLActive) root.altLActive = false;
+    if (root.altRActive) root.altRActive = false;
     if (root.altGrActive) root.altGrActive = false;
     if (root.superActive) root.superActive = false;
   }
 
   function sendKey(keyName) {
     if (!keyName) return;
-    var mods = [];
-    if (root.ctrlActive) mods.push("ctrl");
-    if (root.altActive) mods.push("alt");
-    if (root.altGrActive) mods.push("altgr");
-    if (root.superActive) mods.push("logo");
-    if (root.shiftActive) mods.push("shift");
-
     var args = ["wtype"];
-    for (var i = 0; i < mods.length; i++) {
-      args.push("-M", mods[i]);
-    }
+    if (root.ctrlLActive) args.push("-P", "Control_L");
+    if (root.ctrlRActive) args.push("-P", "Control_R");
+    if (root.altLActive) args.push("-P", "Alt_L");
+    if (root.altRActive) args.push("-P", "Alt_R");
+    if (root.altGrActive) args.push("-M", "altgr");
+    if (root.superActive) args.push("-M", "logo");
+    if (root.shiftLActive) args.push("-P", "Shift_L");
+    if (root.shiftRActive) args.push("-P", "Shift_R");
+
     args.push("-k", keyName);
-    for (var j = mods.length - 1; j >= 0; j--) {
-      args.push("-m", mods[j]);
-    }
+
+    if (root.shiftRActive) args.push("-p", "Shift_R");
+    if (root.shiftLActive) args.push("-p", "Shift_L");
+    if (root.superActive) args.push("-m", "logo");
+    if (root.altGrActive) args.push("-m", "altgr");
+    if (root.altRActive) args.push("-p", "Alt_R");
+    if (root.altLActive) args.push("-p", "Alt_L");
+    if (root.ctrlRActive) args.push("-p", "Control_R");
+    if (root.ctrlLActive) args.push("-p", "Control_L");
     Quickshell.execDetached(args);
 
-    if (root.shiftActive) root.shiftActive = false;
-    if (root.ctrlActive) root.ctrlActive = false;
-    if (root.altActive) root.altActive = false;
+    if (root.shiftLActive) root.shiftLActive = false;
+    if (root.shiftRActive) root.shiftRActive = false;
+    if (root.ctrlLActive) root.ctrlLActive = false;
+    if (root.ctrlRActive) root.ctrlRActive = false;
+    if (root.altLActive) root.altLActive = false;
+    if (root.altRActive) root.altRActive = false;
     if (root.altGrActive) root.altGrActive = false;
     if (root.superActive) root.superActive = false;
   }
@@ -232,6 +302,15 @@ BarWidget {
             root.currentLayout = info.code;
             root.layoutIndex = info.index !== undefined ? info.index : (info.code === "CS" ? 1 : 0);
             root.layoutFullName = info.name || (info.code === "CS" ? "Czech (QWERTY)" : "English (US)");
+            if (info.sys_cfg) {
+              root.sysHasAltGr = info.sys_cfg.has_altgr !== undefined ? info.sys_cfg.has_altgr : true;
+              root.sysSwapLaltLctl = !!info.sys_cfg.swap_lalt_lctl;
+              root.sysSwapAltWin = !!info.sys_cfg.swap_alt_win;
+              root.sysRctrlIsCompose = !!info.sys_cfg.rctrl_is_compose;
+              root.sysAltShiftToggle = !!info.sys_cfg.alt_shift_toggle;
+              root.sysCtrlShiftToggle = !!info.sys_cfg.ctrl_shift_toggle;
+              root.sysShiftsToggle = !!info.sys_cfg.shifts_toggle;
+            }
           }
         } catch (e) {}
       }
@@ -339,7 +418,7 @@ BarWidget {
     }
     padding: Style.space(3)
     contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(310) * Math.max(1.0, Style.fontScale)))
-    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(620) * Math.max(1.0, Style.fontScale)))
+    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(680) * Math.max(1.0, Style.fontScale)))
 
     Rectangle {
       anchors.fill: parent
@@ -646,6 +725,37 @@ BarWidget {
         // 1px Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
+        // Section: System Hardware & XKB Config
+        RowLayout {
+          Layout.fillWidth: true
+          Text {
+            text: "SYSTÉM XKB / ROZLOŽENÍ:"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            font.bold: true
+            color: "#9ca3af"
+          }
+          Item { Layout.fillWidth: true }
+          Text {
+            text: root.sysHasAltGr ? "AltGr: Aktivní" : "Alt: Standard"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            font.bold: true
+            color: root.accentColor
+          }
+        }
+        Text {
+          Layout.fillWidth: true
+          text: "• Oddělené L/R modifikátory (Shift, Ctrl, Alt)" + (root.sysAltShiftToggle ? "\n• Zkratka Alt+Shift: Přepínání jazyka" : "") + (root.sysShiftsToggle ? "\n• Zkratka L+R Shift: Přepínání jazyka" : "") + (root.sysSwapLaltLctl ? "\n• Prohozeno: Levý Ctrl ↔ Levý Alt" : "") + (root.sysRctrlIsCompose ? "\n• Pravý Ctrl: Compose klávesa" : "")
+          font.family: root.monoFont.family
+          font.pixelSize: 9
+          color: "#9ca3af"
+          wrapMode: Text.WordWrap
+        }
+
+        // 1px Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
         // Action: Toggle OSK
         Rectangle {
           Layout.fillWidth: true
@@ -820,14 +930,46 @@ BarWidget {
               }
 
               if (kBtn.isModifier) {
-                if (kBtn.modifierName === "shift") root.shiftActive = !root.shiftActive;
-                else if (kBtn.modifierName === "caps") root.capsActive = !root.capsActive;
-                else if (kBtn.modifierName === "ctrl") root.ctrlActive = !root.ctrlActive;
-                else if (kBtn.modifierName === "super") root.superActive = !root.superActive;
-                else if (kBtn.modifierName === "alt") root.altActive = !root.altActive;
-                else if (kBtn.modifierName === "altgr") root.altGrActive = !root.altGrActive;
-                else if (kBtn.modifierName === "fn") root.fnActive = !root.fnActive;
-                else if (kBtn.modifierName === "layout") root.cycleLayout();
+                if (kBtn.modifierName === "shift_l") {
+                  root.shiftLActive = !root.shiftLActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "shift_r") {
+                  root.shiftRActive = !root.shiftRActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "shift") {
+                  root.shiftLActive = !root.shiftLActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "caps") {
+                  root.capsActive = !root.capsActive;
+                } else if (kBtn.modifierName === "ctrl_l") {
+                  root.ctrlLActive = !root.ctrlLActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "ctrl_r") {
+                  root.ctrlRActive = !root.ctrlRActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "ctrl") {
+                  root.ctrlLActive = !root.ctrlLActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "super") {
+                  root.superActive = !root.superActive;
+                } else if (kBtn.modifierName === "alt_l") {
+                  root.altLActive = !root.altLActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "alt_r") {
+                  root.altRActive = !root.altRActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "alt") {
+                  root.altLActive = !root.altLActive;
+                  root.checkModifierCombos();
+                } else if (kBtn.modifierName === "altgr") {
+                  root.altGrActive = !root.altGrActive;
+                } else if (kBtn.modifierName === "fn") {
+                  root.fnActive = !root.fnActive;
+                } else if (kBtn.modifierName === "compose") {
+                  root.sendKey("Multi_key");
+                } else if (kBtn.modifierName === "layout") {
+                  root.cycleLayout();
+                }
                 return;
               }
 
@@ -1013,10 +1155,19 @@ BarWidget {
               color: Qt.rgba(root.keyText.r, root.keyText.g, root.keyText.b, 0.5)
             }
 
-            // Active Modifier Badges
+            // Active Modifier Badges (Separate Left & Right)
             Text {
-              visible: root.shiftActive
-              text: "[SHIFT ON]"
+              visible: root.shiftLActive
+              text: "[L-SHIFT]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+
+            Text {
+              visible: root.shiftRActive
+              text: "[R-SHIFT]"
               font.family: root.monoFont.family
               font.pixelSize: 10
               font.bold: true
@@ -1030,6 +1181,51 @@ BarWidget {
               font.pixelSize: 10
               font.bold: true
               color: root.cyanColor
+            }
+
+            Text {
+              visible: root.ctrlLActive
+              text: "[L-CTRL]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+
+            Text {
+              visible: root.ctrlRActive
+              text: "[R-CTRL]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+
+            Text {
+              visible: root.altLActive
+              text: "[L-ALT]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+
+            Text {
+              visible: root.altRActive
+              text: "[R-ALT]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+
+            Text {
+              visible: root.altGrActive
+              text: "[ALTGR ON]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
             }
 
             Text {
@@ -1048,15 +1244,6 @@ BarWidget {
               font.pixelSize: 10
               font.bold: true
               color: root.cyanColor
-            }
-
-            Text {
-              visible: root.altGrActive
-              text: "[ALTGR ON]"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: true
-              color: root.accentColor
             }
 
             // Interactive Header Spacer (Drag LMB to Move, RMB to Resize)
@@ -1498,12 +1685,12 @@ BarWidget {
             spacing: 4
 
             KeyBtn {
-              textNormal: root.isApple ? "shift" : "⇧ SHIFT"
+              textNormal: root.isApple ? "shift (L)" : "⇧ SHIFT"
               customWidth: root.isApple ? 95 : 105
               isModifier: true
-              modifierName: "shift"
-              isActive: root.shiftActive
-              customColor: root.shiftActive ? root.accentColor : root.keyText
+              modifierName: "shift_l"
+              isActive: root.shiftLActive
+              customColor: root.shiftLActive ? root.accentColor : root.keyText
             }
             KeyBtn { textNormal: "z" }
             KeyBtn { textNormal: "x" }
@@ -1516,12 +1703,12 @@ BarWidget {
             KeyBtn { textNormal: "."; textShift: root.currentLayout === "CS" ? ":" : ">" }
             KeyBtn { textNormal: root.currentLayout === "CS" ? "-" : "/"; textShift: root.currentLayout === "CS" ? "_" : "?" }
             KeyBtn {
-              textNormal: root.isApple ? "shift" : "⇧ SHIFT"
+              textNormal: root.isApple ? "shift (R)" : (root.sysShiftsToggle ? "SHIFT ⇧ (TOGGLE)" : "SHIFT ⇧")
               customWidth: (root.is65 || root.is75 || root.isApple) ? 75 : 110
               isModifier: true
-              modifierName: "shift"
-              isActive: root.shiftActive
-              customColor: root.shiftActive ? root.accentColor : root.keyText
+              modifierName: "shift_r"
+              isActive: root.shiftRActive
+              customColor: root.shiftRActive ? root.accentColor : root.keyText
             }
 
             // Extensions: 65% / 75%
@@ -1563,12 +1750,36 @@ BarWidget {
               isActive: root.fnActive
               customColor: root.fnActive ? root.cyanColor : root.keyText
             }
-            KeyBtn { visible: root.isApple; textNormal: "⌃ control"; customWidth: 65; isModifier: true; modifierName: "ctrl"; isActive: root.ctrlActive }
-            KeyBtn { visible: root.isApple; textNormal: "⌥ option"; customWidth: 65; isModifier: true; modifierName: "alt"; isActive: root.altActive }
-            KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 78; isModifier: true; modifierName: "super"; isActive: root.superActive }
+            KeyBtn {
+              visible: root.isApple
+              textNormal: "⌃ control"
+              customWidth: 65
+              isModifier: true
+              modifierName: "ctrl_l"
+              isActive: root.ctrlLActive
+              customColor: root.ctrlLActive ? root.accentColor : root.keyText
+            }
+            KeyBtn {
+              visible: root.isApple
+              textNormal: "⌥ option (L)"
+              customWidth: 70
+              isModifier: true
+              modifierName: "alt_l"
+              isActive: root.altLActive
+              customColor: root.altLActive ? root.accentColor : root.keyText
+            }
+            KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
             KeyBtn { visible: root.isApple; textNormal: "SPACE"; keyCommand: "space"; Layout.fillWidth: true; customColor: "#9ca3af" }
-            KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 78; isModifier: true; modifierName: "super"; isActive: root.superActive }
-            KeyBtn { visible: root.isApple; textNormal: "⌥ option"; customWidth: 65; isModifier: true; modifierName: "alt"; isActive: root.altActive }
+            KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
+            KeyBtn {
+              visible: root.isApple
+              textNormal: "⌥ option (R)"
+              customWidth: 70
+              isModifier: true
+              modifierName: "alt_r"
+              isActive: root.altRActive
+              customColor: root.altRActive ? root.accentColor : root.keyText
+            }
             KeyBtn { visible: root.isApple; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout"; customColor: root.warnColor; customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12) }
             KeyBtn { visible: root.isApple; textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
             KeyBtn { visible: root.isApple; textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
@@ -1577,11 +1788,12 @@ BarWidget {
             // Standard Modifiers (60%, 65%, 75%, 80% TKL, Full Size)
             KeyBtn {
               visible: !root.isApple
-              textNormal: "Ctrl"
+              textNormal: root.sysSwapLaltLctl ? "Alt (L)" : "Ctrl (L)"
               customWidth: 60
               isModifier: true
-              modifierName: "ctrl"
-              isActive: root.ctrlActive
+              modifierName: root.sysSwapLaltLctl ? "alt_l" : "ctrl_l"
+              isActive: root.sysSwapLaltLctl ? root.altLActive : root.ctrlLActive
+              customColor: (root.sysSwapLaltLctl ? root.altLActive : root.ctrlLActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
               visible: !root.isApple
@@ -1595,11 +1807,12 @@ BarWidget {
             }
             KeyBtn {
               visible: !root.isApple
-              textNormal: "Alt"
+              textNormal: root.sysSwapLaltLctl ? "Ctrl (L)" : "Alt (L)"
               customWidth: 60
               isModifier: true
-              modifierName: "alt"
-              isActive: root.altActive
+              modifierName: root.sysSwapLaltLctl ? "ctrl_l" : "alt_l"
+              isActive: root.sysSwapLaltLctl ? root.ctrlLActive : root.altLActive
+              customColor: (root.sysSwapLaltLctl ? root.ctrlLActive : root.altLActive) ? root.accentColor : root.keyText
             }
 
             // Spacebar
@@ -1611,15 +1824,15 @@ BarWidget {
               customColor: "#9ca3af"
             }
 
-            // Right Modifiers (AltGr for European/Czech special characters)
+            // Right Modifiers (AltGr for European/Czech special characters, RAlt for US)
             KeyBtn {
               visible: !root.isApple
-              textNormal: "AltGr"
+              textNormal: root.sysHasAltGr ? "AltGr" : "Alt (R)"
               customWidth: 55
               isModifier: true
-              modifierName: "altgr"
-              isActive: root.altGrActive
-              customColor: root.altGrActive ? root.accentColor : root.keyText
+              modifierName: root.sysHasAltGr ? "altgr" : "alt_r"
+              isActive: root.sysHasAltGr ? root.altGrActive : root.altRActive
+              customColor: (root.sysHasAltGr ? root.altGrActive : root.altRActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
               visible: !root.isApple
@@ -1641,11 +1854,12 @@ BarWidget {
             }
             KeyBtn {
               visible: !root.isApple && (root.currentFormat === "60%" || root.hasNavCluster)
-              textNormal: "Ctrl"
+              textNormal: root.sysRctrlIsCompose ? "Comp (R)" : "Ctrl (R)"
               customWidth: 55
               isModifier: true
-              modifierName: "ctrl"
-              isActive: root.ctrlActive
+              modifierName: root.sysRctrlIsCompose ? "compose" : "ctrl_r"
+              isActive: root.ctrlRActive
+              customColor: root.ctrlRActive ? root.accentColor : root.keyText
             }
 
             // Arrow Keys for 65% and 75%
