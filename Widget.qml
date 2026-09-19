@@ -116,6 +116,7 @@ BarWidget {
 
   function setFormat(fmt): void {
     root.currentFormat = fmt;
+    root.fnActive = false;
     resetOskPosition();
   }
 
@@ -1206,7 +1207,7 @@ BarWidget {
             }
 
             Text {
-              visible: root.fnActive
+              visible: root.fnActive && (!root.hasFRow || root.isMac)
               text: "[FN ON]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -1803,9 +1804,9 @@ BarWidget {
               customColor: (root.sysHasAltGr ? root.altGrActive : root.altRActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
-              visible: !root.isMac
+              visible: !root.isMac && (!root.hasFRow)
               textNormal: "Fn"
-              customWidth: (root.currentFormat === "60%" || root.hasNavCluster) ? 60 : 50
+              customWidth: (root.currentFormat === "60%") ? 60 : 50
               isModifier: true
               modifierName: "fn"
               isActive: root.fnActive
@@ -1821,7 +1822,7 @@ BarWidget {
               customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12)
             }
             KeyBtn {
-              visible: !root.isMac && (root.currentFormat === "60%" || root.hasNavCluster)
+              visible: !root.isMac && (root.currentFormat === "60%" || root.hasNavCluster || root.is75)
               textNormal: root.sysRctrlIsCompose ? "Comp" : "Ctrl"
               customWidth: 55
               isModifier: true
