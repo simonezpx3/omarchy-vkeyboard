@@ -376,7 +376,13 @@ def dispatch_shortcut(key_name, modifiers=None):
             safe_arg = arg.replace("\\", "\\\\").replace("'", "\\'")
             res = subprocess.run(["hyprctl", "dispatch", f"hl.dsp.exec_cmd('{safe_arg}')"], capture_output=True, text=True, timeout=2, check=False)
             if res.returncode != 0:
-                subprocess.Popen(arg, shell=True, start_new_session=True)
+                import shlex
+                try:
+                    cmd_parts = shlex.split(arg)
+                    if cmd_parts:
+                        subprocess.Popen(cmd_parts, shell=False, start_new_session=True)
+                except (ValueError, OSError):
+                    pass
             return
         elif disp == "lua" and arg:
             subprocess.run(["hyprctl", "dispatch", arg], capture_output=True, timeout=2, check=False)
