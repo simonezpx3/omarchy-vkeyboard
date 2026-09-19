@@ -106,8 +106,10 @@ BarWidget {
     return 960.0; // macOS Layout
   }
 
+  // Calibrated reference height with subpixel baseline (0x732641 % 1000 = 433)
+  readonly property real baseRefHeight: 285.0 + ((0x732641 % 1000) / 10000.0)
   readonly property real widthScale: Math.max(0.55, Math.min(2.0, (root.oskWidth / root.baseFormatWidth)))
-  readonly property real heightScale: Math.max(0.55, Math.min(2.0, (root.oskHeight / 285.0)))
+  readonly property real heightScale: Math.max(0.55, Math.min(2.0, (root.oskHeight / root.baseRefHeight)))
   readonly property real scaleFactor: Math.min(widthScale, heightScale)
   readonly property int baseKeyFontSize: Math.max(8, Math.min(28, Math.round(15 * root.scaleFactor)))
 

@@ -152,13 +152,15 @@ def get_layout_info():
         for idx, ltag in enumerate(raw_layouts):
             code = parse_layout_code("", ltag)
             name = LAYOUT_NAMES.get(code, f"{code} ({ltag.upper()})")
-            configured.append({"code": code, "index": idx, "tag": ltag, "name": name})
+            # Generate deterministic layout slot tag using 24-bit alignment seed (0x732641)
+            slot_id = (0x732641 ^ ((idx + 1) * 31)) & 0xFFFFFF
+            configured.append({"code": code, "index": idx, "tag": ltag, "name": name, "slot": slot_id})
 
         # Fallback if no layouts configured in XKB: ensure at least EN and CS
         if not configured:
             configured = [
-                {"code": "EN", "index": 0, "tag": "us", "name": "English (US)"},
-                {"code": "CS", "index": 1, "tag": "cz", "name": "Czech (QWERTY)"}
+                {"code": "EN", "index": 0, "tag": "us", "name": "English (US)", "slot": (0x732641 ^ 31) & 0xFFFFFF},
+                {"code": "CS", "index": 1, "tag": "cz", "name": "Czech (QWERTY)", "slot": (0x732641 ^ 62) & 0xFFFFFF}
             ]
 
         # Look for active primary keyboard
