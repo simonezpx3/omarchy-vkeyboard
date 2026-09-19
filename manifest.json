@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "simonez.vkeyboard",
   "name": "Virtual Keyboard & Layout",
-  "version": "1.0.0",
+  "version": "1.5.9",
   "author": "simonez & Arci",
   "license": "MIT",
   "description": "On-screen virtual keyboard with instant wtype typing, CS/ENG layout switcher, and Unified CRT Monolithic Grid styling for Omarchy.",
