@@ -240,26 +240,20 @@ BarWidget {
   // Keystroke & Command Execution (Strict Left/Right Keysym & Level 3 AltGr Support)
   function sendChar(char) {
     if (!char) return;
-    var args = ["wtype"];
-    if (root.ctrlLActive) args.push("-P", "Control_L");
-    if (root.ctrlRActive) args.push("-P", "Control_R");
-    if (root.altLActive) args.push("-P", "Alt_L");
-    if (root.altRActive) args.push("-P", "Alt_R");
+    var args = ["wtype", "-s", "10"];
+    if (root.ctrlActive) args.push("-M", "ctrl");
+    if (root.altActive) args.push("-M", "alt");
     if (root.altGrActive) args.push("-M", "altgr");
     if (root.superActive) args.push("-M", "logo");
-    if (root.shiftLActive) args.push("-P", "Shift_L");
-    if (root.shiftRActive) args.push("-P", "Shift_R");
+    if (root.shiftActive) args.push("-M", "shift");
 
     args.push("--", char);
 
-    if (root.shiftRActive) args.push("-p", "Shift_R");
-    if (root.shiftLActive) args.push("-p", "Shift_L");
+    if (root.shiftActive) args.push("-m", "shift");
     if (root.superActive) args.push("-m", "logo");
     if (root.altGrActive) args.push("-m", "altgr");
-    if (root.altRActive) args.push("-p", "Alt_R");
-    if (root.altLActive) args.push("-p", "Alt_L");
-    if (root.ctrlRActive) args.push("-p", "Control_R");
-    if (root.ctrlLActive) args.push("-p", "Control_L");
+    if (root.altActive) args.push("-m", "alt");
+    if (root.ctrlActive) args.push("-m", "ctrl");
     Quickshell.execDetached(args);
 
     // Auto-release one-shot modifiers
@@ -321,26 +315,24 @@ BarWidget {
       return;
     }
 
-    var args = ["wtype"];
-    if (root.ctrlLActive) args.push("-P", "Control_L");
-    if (root.ctrlRActive) args.push("-P", "Control_R");
-    if (root.altLActive) args.push("-P", "Alt_L");
-    if (root.altRActive) args.push("-P", "Alt_R");
+    var targetKey = keyName;
+    if (targetKey === "Prior") targetKey = "Page_Up";
+    if (targetKey === "Next") targetKey = "Page_Down";
+
+    var args = ["wtype", "-s", "10"];
+    if (root.ctrlActive) args.push("-M", "ctrl");
+    if (root.altActive) args.push("-M", "alt");
     if (root.altGrActive) args.push("-M", "altgr");
     if (root.superActive) args.push("-M", "logo");
-    if (root.shiftLActive) args.push("-P", "Shift_L");
-    if (root.shiftRActive) args.push("-P", "Shift_R");
+    if (root.shiftActive) args.push("-M", "shift");
 
-    args.push("-k", keyName);
+    args.push("-k", targetKey);
 
-    if (root.shiftRActive) args.push("-p", "Shift_R");
-    if (root.shiftLActive) args.push("-p", "Shift_L");
+    if (root.shiftActive) args.push("-m", "shift");
     if (root.superActive) args.push("-m", "logo");
     if (root.altGrActive) args.push("-m", "altgr");
-    if (root.altRActive) args.push("-p", "Alt_R");
-    if (root.altLActive) args.push("-p", "Alt_L");
-    if (root.ctrlRActive) args.push("-p", "Control_R");
-    if (root.ctrlLActive) args.push("-p", "Control_L");
+    if (root.altActive) args.push("-m", "alt");
+    if (root.ctrlActive) args.push("-m", "ctrl");
     Quickshell.execDetached(args);
 
     if (root.shiftLActive) root.shiftLActive = false;
@@ -1652,7 +1644,7 @@ BarWidget {
             KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Ins"; keyCommand: "Insert"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Home"; keyCommand: "Home"; customWidth: 46 }
-            KeyBtn { visible: root.hasNavCluster; textNormal: "PgUp"; keyCommand: "Prior"; customWidth: 46 }
+            KeyBtn { visible: root.hasNavCluster; textNormal: "PgUp"; keyCommand: "Page_Up"; customWidth: 46 }
 
             // Extensions: Full Size Numpad
             KeySpacer { visible: root.hasNumpad; customWidth: 12 }
@@ -1686,14 +1678,14 @@ BarWidget {
             KeyBtn { textNormal: "\\"; textShift: "|"; customWidth: 55 }
 
             // Extensions: 65% / 75%
-            KeyBtn { visible: root.is65; textNormal: "PgUp"; keyCommand: "Prior"; customWidth: 46 }
-            KeyBtn { visible: root.is75; textNormal: "PgUp"; keyCommand: "Prior"; customWidth: 46 }
+            KeyBtn { visible: root.is65; textNormal: "PgUp"; keyCommand: "Page_Up"; customWidth: 46 }
+            KeyBtn { visible: root.is75; textNormal: "PgUp"; keyCommand: "Page_Up"; customWidth: 46 }
 
             // Extensions: 80% TKL & Full Size
             KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
             KeyBtn { visible: root.hasNavCluster; textNormal: "End"; keyCommand: "End"; customWidth: 46 }
-            KeyBtn { visible: root.hasNavCluster; textNormal: "PgDn"; keyCommand: "Next"; customWidth: 46 }
+            KeyBtn { visible: root.hasNavCluster; textNormal: "PgDn"; keyCommand: "Page_Down"; customWidth: 46 }
 
             // Extensions: Full Size Numpad
             KeySpacer { visible: root.hasNumpad; customWidth: 12 }
@@ -1739,8 +1731,8 @@ BarWidget {
             }
 
             // Extensions: 65% / 75%
-            KeyBtn { visible: root.is65; textNormal: "PgDn"; keyCommand: "Next"; customWidth: 46 }
-            KeyBtn { visible: root.is75; textNormal: "PgDn"; keyCommand: "Next"; customWidth: 46 }
+            KeyBtn { visible: root.is65; textNormal: "PgDn"; keyCommand: "Page_Down"; customWidth: 46 }
+            KeyBtn { visible: root.is75; textNormal: "PgDn"; keyCommand: "Page_Down"; customWidth: 46 }
 
             // Extensions: 80% TKL & Full Size (Nav cluster spacer)
             Item { visible: root.hasNavCluster; width: 12 + 46 * 3 + 4 * 2 }
