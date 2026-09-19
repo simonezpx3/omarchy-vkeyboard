@@ -71,18 +71,18 @@ BarWidget {
     }
   }
 
-  // Unified CRT Monolithic Grid Theme
-  readonly property color tuiBorder: Color.mBase && Color.mBase.border ? Color.mBase.border : "#30363d"
-  readonly property color accentColor: "#34d399" // Emerald CRT
-  readonly property color warnColor: "#fbbf24"   // Amber
-  readonly property color cyanColor: "#38bdf8"   // Cyan
-  readonly property color bgCard: "#0d1117"
-  readonly property color bgOsk: "#0d1117"       // 100% solid opaque (zero transparency)
-  readonly property color keyBg: "#161b22"
-  readonly property color keyHover: "#21262d"
-  readonly property color keyPressed: "#30363d"
-  readonly property color keyBorder: "#30363d"
-  readonly property color keyText: "#e6edf3"
+  // Unified CRT Monolithic Grid Theme (Strictly Derived from Omarchy System Theme)
+  readonly property color bgCard: Color.popups && Color.popups.background ? Color.popups.background : Color.background
+  readonly property color bgOsk: Color.background ? Color.background : "#000618"
+  readonly property color tuiBorder: Color.popups && Color.popups.border ? Color.popups.border : (Color.accent ? Color.accent : "#3c7fdb")
+  readonly property color accentColor: Color.accent ? Color.accent : "#3c7fdb"
+  readonly property color warnColor: Color.urgent ? Color.urgent : "#a55555"
+  readonly property color cyanColor: Color.flatColor ? Color.flatColor("cyan", "#37b6e5") : "#37b6e5"
+  readonly property color keyBg: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.08)
+  readonly property color keyHover: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.16)
+  readonly property color keyPressed: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.28)
+  readonly property color keyBorder: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.18)
+  readonly property color keyText: Color.foreground ? Color.foreground : "#e2e6d8"
   readonly property font monoFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
   readonly property font keyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 12, bold: true })
   readonly property font smallKeyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 9 })
@@ -569,18 +569,19 @@ BarWidget {
           anchors.fill: parent
           hoverEnabled: true
           acceptedButtons: Qt.LeftButton | Qt.RightButton
-          cursorShape: {
-            var isSuper = (kMouse.modifiers & Qt.MetaModifier) || root.superActive;
-            if (isSuper) {
-              return kMouse.buttons & Qt.RightButton ? Qt.SizeFDiagCursor : Qt.SizeAllCursor;
-            }
-            return Qt.PointingHandCursor;
-          }
+          cursorShape: (kMouse.buttons & Qt.RightButton) ? Qt.SizeFDiagCursor : (root.superActive ? Qt.SizeAllCursor : Qt.PointingHandCursor)
 
           onPressed: function(mouse) {
-            var isSuper = (mouse.modifiers & Qt.MetaModifier) || root.superActive;
-            if (isSuper || mouse.button === Qt.RightButton) {
-              mouse.accepted = false; // Propagate down to cardDragArea
+            if (mouse.button === Qt.RightButton) {
+              var globalPt = kMouse.mapToItem(oskWindow, mouse.x, mouse.y);
+              var cardPt = kMouse.mapToItem(oskCard, mouse.x, mouse.y);
+              cardDragArea.startResize(globalPt, cardPt.x, cardPt.y);
+              return;
+            }
+
+            if (root.superActive) {
+              var gPt = kMouse.mapToItem(oskWindow, mouse.x, mouse.y);
+              cardDragArea.startMove(gPt);
               return;
             }
 
@@ -601,10 +602,24 @@ BarWidget {
               root.sendChar(ch);
             }
           }
+
+          onPositionChanged: function(mouse) {
+            var globalPt = kMouse.mapToItem(oskWindow, mouse.x, mouse.y);
+            if (cardDragArea.isResizing) {
+              cardDragArea.doResize(globalPt);
+            } else if (cardDragArea.isMoving) {
+              cardDragArea.doMove(globalPt);
+            }
+          }
+
+          onReleased: function(mouse) {
+            if (cardDragArea.isResizing) cardDragArea.endResize();
+            if (cardDragArea.isMoving) cardDragArea.endMove();
+          }
         }
       }
 
-      // Background Drag & Resize Area (Hyprland SUPER + RMB/LMB window handling)
+      // Background Drag & Resize Controller
       MouseArea {
         id: cardDragArea
         anchors.fill: parent
@@ -623,86 +638,98 @@ BarWidget {
         property bool resizeFromLeft: false
         property bool resizeFromTop: false
 
-        onPressed: function(mouse) {
-          var isSuper = (mouse.modifiers & Qt.MetaModifier) || root.superActive;
-          var pt = cardDragArea.mapToItem(oskWindow, mouse.x, mouse.y);
+        function startResize(globalPt, localX, localY): void {
+          isResizing = true;
+          isMoving = false;
+          dragStartGlobalX = globalPt.x;
+          dragStartGlobalY = globalPt.y;
+          initialOskX = oskCard.x;
+          initialOskY = oskCard.y;
+          initialOskW = oskCard.width;
+          initialOskH = oskCard.height;
+          resizeFromLeft = (localX < oskCard.width / 2);
+          resizeFromTop = (localY < oskCard.height / 2);
+        }
 
-          // Super + Right Button -> Resize (Hyprland style)
-          // Also RMB on background -> Resize
-          if (mouse.button === Qt.RightButton || (isSuper && mouse.button === Qt.RightButton)) {
-            isResizing = true;
-            isMoving = false;
-            dragStartGlobalX = pt.x;
-            dragStartGlobalY = pt.y;
-            initialOskX = oskCard.x;
-            initialOskY = oskCard.y;
-            initialOskW = oskCard.width;
-            initialOskH = oskCard.height;
-            resizeFromLeft = (mouse.x < oskCard.width / 2);
-            resizeFromTop = (mouse.y < oskCard.height / 2);
-            mouse.accepted = true;
-            return;
+        function doResize(globalPt): void {
+          if (!isResizing) return;
+          var dx = globalPt.x - dragStartGlobalX;
+          var dy = globalPt.y - dragStartGlobalY;
+          var minW = 600;
+          var maxW = oskWindow ? oskWindow.width - 20 : 1920;
+          var minH = 180;
+          var maxH = oskWindow ? oskWindow.height - 30 : 1080;
+
+          var newW = initialOskW;
+          var newH = initialOskH;
+          var newX = initialOskX;
+          var newY = initialOskY;
+
+          if (resizeFromLeft) {
+            newW = Math.max(minW, Math.min(maxW, initialOskW - dx));
+            newX = initialOskX + (initialOskW - newW);
+          } else {
+            newW = Math.max(minW, Math.min(maxW, initialOskW + dx));
           }
 
-          // Super + Left Button -> Move (Hyprland style)
-          // Also LMB on background/margins -> Move
-          if ((isSuper && mouse.button === Qt.LeftButton) || mouse.button === Qt.LeftButton) {
-            isMoving = true;
-            isResizing = false;
-            dragStartGlobalX = pt.x;
-            dragStartGlobalY = pt.y;
-            initialOskX = oskCard.x;
-            initialOskY = oskCard.y;
-            mouse.accepted = true;
-            return;
+          if (resizeFromTop) {
+            newH = Math.max(minH, Math.min(maxH, initialOskH - dy));
+            newY = initialOskY + (initialOskH - newH);
+          } else {
+            newH = Math.max(minH, Math.min(maxH, initialOskH + dy));
+          }
+
+          root.oskWidth = Math.round(newW);
+          root.oskHeight = Math.round(newH);
+          root.oskX = Math.round(Math.max(10, Math.min((oskWindow ? oskWindow.width : 1920) - root.oskWidth - 10, newX)));
+          root.oskY = Math.round(Math.max(10, Math.min((oskWindow ? oskWindow.height : 1080) - root.oskHeight - 10, newY)));
+        }
+
+        function endResize(): void {
+          isResizing = false;
+        }
+
+        function startMove(globalPt): void {
+          isMoving = true;
+          isResizing = false;
+          dragStartGlobalX = globalPt.x;
+          dragStartGlobalY = globalPt.y;
+          initialOskX = oskCard.x;
+          initialOskY = oskCard.y;
+        }
+
+        function doMove(globalPt): void {
+          if (!isMoving) return;
+          var dx = globalPt.x - dragStartGlobalX;
+          var dy = globalPt.y - dragStartGlobalY;
+          var targetX = initialOskX + dx;
+          var targetY = initialOskY + dy;
+          root.oskX = Math.round(Math.max(10, Math.min((oskWindow ? oskWindow.width : 1920) - oskCard.width - 10, targetX)));
+          root.oskY = Math.round(Math.max(10, Math.min((oskWindow ? oskWindow.height : 1080) - oskCard.height - 10, targetY)));
+        }
+
+        function endMove(): void {
+          isMoving = false;
+        }
+
+        onPressed: function(mouse) {
+          var globalPt = cardDragArea.mapToItem(oskWindow, mouse.x, mouse.y);
+          if (mouse.button === Qt.RightButton) {
+            startResize(globalPt, mouse.x, mouse.y);
+          } else if (mouse.button === Qt.LeftButton) {
+            startMove(globalPt);
           }
         }
 
         onPositionChanged: function(mouse) {
-          var pt = cardDragArea.mapToItem(oskWindow, mouse.x, mouse.y);
-          var dx = pt.x - dragStartGlobalX;
-          var dy = pt.y - dragStartGlobalY;
-
-          if (isResizing) {
-            var minW = 600;
-            var maxW = oskWindow ? oskWindow.width - 20 : 1920;
-            var minH = 180;
-            var maxH = oskWindow ? oskWindow.height - 30 : 1080;
-
-            var newW = initialOskW;
-            var newH = initialOskH;
-            var newX = initialOskX;
-            var newY = initialOskY;
-
-            if (resizeFromLeft) {
-              newW = Math.max(minW, Math.min(maxW, initialOskW - dx));
-              newX = initialOskX + (initialOskW - newW);
-            } else {
-              newW = Math.max(minW, Math.min(maxW, initialOskW + dx));
-            }
-
-            if (resizeFromTop) {
-              newH = Math.max(minH, Math.min(maxH, initialOskH - dy));
-              newY = initialOskY + (initialOskH - newH);
-            } else {
-              newH = Math.max(minH, Math.min(maxH, initialOskH + dy));
-            }
-
-            root.oskWidth = Math.round(newW);
-            root.oskHeight = Math.round(newH);
-            root.oskX = Math.round(Math.max(10, Math.min(oskWindow.width - root.oskWidth - 10, newX)));
-            root.oskY = Math.round(Math.max(10, Math.min(oskWindow.height - root.oskHeight - 10, newY)));
-          } else if (isMoving) {
-            var targetX = initialOskX + dx;
-            var targetY = initialOskY + dy;
-            root.oskX = Math.round(Math.max(10, Math.min(oskWindow.width - oskCard.width - 10, targetX)));
-            root.oskY = Math.round(Math.max(10, Math.min(oskWindow.height - oskCard.height - 10, targetY)));
-          }
+          var globalPt = cardDragArea.mapToItem(oskWindow, mouse.x, mouse.y);
+          if (isResizing) doResize(globalPt);
+          else if (isMoving) doMove(globalPt);
         }
 
         onReleased: function(mouse) {
-          isResizing = false;
-          isMoving = false;
+          endResize();
+          endMove();
         }
       }
 
@@ -724,7 +751,7 @@ BarWidget {
             text: "⠿"
             font.family: root.monoFont.family
             font.pixelSize: 12
-            color: "#6b7280"
+            color: root.accentColor
           }
 
           Text {
@@ -732,7 +759,14 @@ BarWidget {
             font.family: root.monoFont.family
             font.pixelSize: 11
             font.bold: true
-            color: root.accentColor
+            color: root.keyText
+          }
+
+          Text {
+            text: "[RMB: Resize | Drag: Move]"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            color: Qt.rgba(root.keyText.r, root.keyText.g, root.keyText.b, 0.5)
           }
 
           // Layout Switcher Badge
@@ -791,13 +825,6 @@ BarWidget {
             font.pixelSize: 10
             font.bold: true
             color: root.accentColor
-          }
-
-          Text {
-            text: "[Super+RMB: Resize]"
-            font.family: root.monoFont.family
-            font.pixelSize: 9
-            color: "#6b7280"
           }
 
           Item { Layout.fillWidth: true }
@@ -1072,8 +1099,8 @@ BarWidget {
       // Corner Resize Grip (Bottom-Right)
       MouseArea {
         id: cornerResizeGrip
-        width: 20
-        height: 20
+        width: 24
+        height: 24
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         cursorShape: Qt.SizeFDiagCursor
@@ -1083,8 +1110,8 @@ BarWidget {
           anchors.centerIn: parent
           text: "◢"
           font.family: root.monoFont.family
-          font.pixelSize: 10
-          color: cornerResizeGrip.containsMouse ? root.accentColor : "#4b5563"
+          font.pixelSize: 11
+          color: cornerResizeGrip.containsMouse ? root.accentColor : Qt.rgba(root.keyText.r, root.keyText.g, root.keyText.b, 0.4)
         }
 
         property real dragStartX: 0
@@ -1093,13 +1120,11 @@ BarWidget {
         property real startH: 0
 
         onPressed: function(mouse) {
-          if (mouse.button === Qt.LeftButton || mouse.button === Qt.RightButton) {
-            var pt = cornerResizeGrip.mapToItem(oskWindow, mouse.x, mouse.y);
-            dragStartX = pt.x;
-            dragStartY = pt.y;
-            startW = oskCard.width;
-            startH = oskCard.height;
-          }
+          var pt = cornerResizeGrip.mapToItem(oskWindow, mouse.x, mouse.y);
+          dragStartX = pt.x;
+          dragStartY = pt.y;
+          startW = oskCard.width;
+          startH = oskCard.height;
         }
 
         onPositionChanged: function(mouse) {
@@ -1112,6 +1137,139 @@ BarWidget {
             var minH = 180;
             var maxH = oskWindow ? oskWindow.height - 30 : 1080;
             root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
+            root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
+          }
+        }
+      }
+
+      // Edge Resize Handles (Left, Right, Top, Bottom)
+      MouseArea {
+        id: leftResizeEdge
+        width: 8
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.topMargin: 8
+        anchors.bottomMargin: 8
+        cursorShape: Qt.SizeHorCursor
+        hoverEnabled: true
+
+        property real startGlobalX: 0
+        property real startW: 0
+        property real startX: 0
+
+        onPressed: function(mouse) {
+          var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          startGlobalX = pt.x;
+          startW = oskCard.width;
+          startX = oskCard.x;
+        }
+
+        onPositionChanged: function(mouse) {
+          if (pressed) {
+            var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+            var dx = pt.x - startGlobalX;
+            var minW = 600;
+            var maxW = oskWindow ? oskWindow.width - 20 : 1920;
+            var newW = Math.max(minW, Math.min(maxW, startW - dx));
+            root.oskWidth = Math.round(newW);
+            root.oskX = Math.round(startX + (startW - newW));
+          }
+        }
+      }
+
+      MouseArea {
+        id: rightResizeEdge
+        width: 8
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.topMargin: 8
+        anchors.bottomMargin: 24
+        cursorShape: Qt.SizeHorCursor
+        hoverEnabled: true
+
+        property real startGlobalX: 0
+        property real startW: 0
+
+        onPressed: function(mouse) {
+          var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          startGlobalX = pt.x;
+          startW = oskCard.width;
+        }
+
+        onPositionChanged: function(mouse) {
+          if (pressed) {
+            var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+            var dx = pt.x - startGlobalX;
+            var minW = 600;
+            var maxW = oskWindow ? oskWindow.width - 20 : 1920;
+            root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
+          }
+        }
+      }
+
+      MouseArea {
+        id: topResizeEdge
+        height: 8
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 8
+        anchors.rightMargin: 8
+        cursorShape: Qt.SizeVerCursor
+        hoverEnabled: true
+
+        property real startGlobalY: 0
+        property real startH: 0
+        property real startY: 0
+
+        onPressed: function(mouse) {
+          var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          startGlobalY = pt.y;
+          startH = oskCard.height;
+          startY = oskCard.y;
+        }
+
+        onPositionChanged: function(mouse) {
+          if (pressed) {
+            var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+            var dy = pt.y - startGlobalY;
+            var minH = 180;
+            var maxH = oskWindow ? oskWindow.height - 30 : 1080;
+            var newH = Math.max(minH, Math.min(maxH, startH - dy));
+            root.oskHeight = Math.round(newH);
+            root.oskY = Math.round(startY + (startH - newH));
+          }
+        }
+      }
+
+      MouseArea {
+        id: bottomResizeEdge
+        height: 8
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 8
+        anchors.rightMargin: 24
+        cursorShape: Qt.SizeVerCursor
+        hoverEnabled: true
+
+        property real startGlobalY: 0
+        property real startH: 0
+
+        onPressed: function(mouse) {
+          var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          startGlobalY = pt.y;
+          startH = oskCard.height;
+        }
+
+        onPositionChanged: function(mouse) {
+          if (pressed) {
+            var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+            var dy = pt.y - startGlobalY;
+            var minH = 180;
+            var maxH = oskWindow ? oskWindow.height - 30 : 1080;
             root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
           }
         }
