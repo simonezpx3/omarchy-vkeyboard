@@ -24,6 +24,25 @@ BarWidget {
   property bool altActive: false
   property bool superActive: false
 
+  // Virtual Keyboard Window Dimensions & Position
+  property int oskWidth: 1020
+  property int oskHeight: 285
+  property real oskX: -1
+  property real oskY: -1
+  readonly property int baseKeyFontSize: Math.max(10, Math.min(16, Math.round(root.oskHeight / 24)))
+
+  function resetOskPosition(): void {
+    root.oskWidth = Math.min(1020, oskWindow ? oskWindow.width - 32 : 1020);
+    root.oskHeight = 285;
+    if (oskWindow && oskWindow.width > 0) {
+      root.oskX = Math.round((oskWindow.width - root.oskWidth) / 2);
+      root.oskY = Math.round(oskWindow.height - root.oskHeight - 16);
+    } else {
+      root.oskX = -1;
+      root.oskY = -1;
+    }
+  }
+
   // Configuration
   property bool showBadge: setting("showBadge", true)
 
@@ -58,7 +77,7 @@ BarWidget {
   readonly property color warnColor: "#fbbf24"   // Amber
   readonly property color cyanColor: "#38bdf8"   // Cyan
   readonly property color bgCard: "#0d1117"
-  readonly property color bgOsk: "#0f141cee"
+  readonly property color bgOsk: "#0d1117"       // 100% solid opaque (zero transparency)
   readonly property color keyBg: "#161b22"
   readonly property color keyHover: "#21262d"
   readonly property color keyPressed: "#30363d"
@@ -461,15 +480,15 @@ BarWidget {
 
     Rectangle {
       id: oskCard
-      width: Math.min(parent ? parent.width - 32 : 1020, 1020)
-      height: 285
-      anchors.bottom: parent.bottom
-      anchors.bottomMargin: 16
-      anchors.horizontalCenter: parent.horizontalCenter
+      width: root.oskWidth
+      height: root.oskHeight
+      x: root.oskX >= 0 ? root.oskX : ((oskWindow && oskWindow.width > width) ? Math.round((oskWindow.width - width) / 2) : 100)
+      y: root.oskY >= 0 ? root.oskY : ((oskWindow && oskWindow.height > height) ? Math.round(oskWindow.height - height - 16) : 500)
       color: root.bgOsk
       border.width: 1
       border.color: root.accentColor
       radius: 6
+      opacity: 1.0
 
       // Key Component
       component KeyBtn: Rectangle {
@@ -480,46 +499,68 @@ BarWidget {
         property real customWidth: 0
         property real customWeight: 1.0
         property bool isModifier: false
+        property string modifierName: ""
         property bool isActive: false
         property color customColor: root.keyText
         property color customBg: root.keyBg
+        property string customIcon: ""
+        property string customIconFont: ""
+
+        readonly property real widthScale: Math.max(0.65, Math.min(1.8, oskCard.width / 1020.0))
 
         Layout.fillWidth: customWidth === 0
-        Layout.preferredWidth: customWidth > 0 ? customWidth : 0
-        Layout.preferredHeight: 38
+        Layout.preferredWidth: customWidth > 0 ? Math.round(customWidth * widthScale) : 0
+        Layout.fillHeight: true
+        Layout.minimumHeight: 24
         radius: 4
         color: kMouse.pressed ? root.keyPressed : (kMouse.containsMouse ? root.keyHover : (isActive ? Qt.rgba(52/255, 211/255, 153/255, 0.25) : customBg))
         border.width: 1
         border.color: isActive ? root.accentColor : (kMouse.containsMouse ? "#4b5563" : root.keyBorder)
 
-        ColumnLayout {
+        RowLayout {
           anchors.centerIn: parent
-          spacing: 1
+          spacing: 3
 
-          // Shifted character (if present)
           Text {
-            visible: textShift !== "" && textShift !== textNormal
-            Layout.alignment: Qt.AlignHCenter
-            text: textShift
-            font.family: root.monoFont.family
-            font.pixelSize: 8
-            color: root.shiftActive ? root.accentColor : "#9ca3af"
+            visible: kBtn.customIcon !== ""
+            Layout.alignment: Qt.AlignVCenter
+            text: kBtn.customIcon
+            font.family: kBtn.customIconFont !== "" ? kBtn.customIconFont : root.monoFont.family
+            font.pixelSize: Math.max(11, Math.round(root.baseKeyFontSize * 1.1))
+            color: isActive ? root.accentColor : kBtn.customColor
+            verticalAlignment: Text.AlignVCenter
           }
 
-          // Main character / label
-          Text {
-            Layout.alignment: Qt.AlignHCenter
-            text: {
-              if (root.shiftActive && textShift !== "") return textShift;
-              if (root.capsActive || root.shiftActive) {
-                return textNormal.toUpperCase();
-              }
-              return textNormal;
+          ColumnLayout {
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 1
+
+            // Shifted character (if present)
+            Text {
+              visible: textShift !== "" && textShift !== textNormal
+              Layout.alignment: Qt.AlignHCenter
+              text: textShift
+              font.family: root.monoFont.family
+              font.pixelSize: Math.max(7, Math.round(root.baseKeyFontSize * 0.7))
+              color: root.shiftActive ? root.accentColor : "#9ca3af"
             }
-            font.family: root.keyFont.family
-            font.pixelSize: textNormal.length > 2 ? 10 : 13
-            font.bold: true
-            color: isActive ? root.accentColor : kBtn.customColor
+
+            // Main character / label
+            Text {
+              Layout.alignment: Qt.AlignHCenter
+              text: {
+                if (root.shiftActive && textShift !== "") return textShift;
+                if (root.capsActive || root.shiftActive) {
+                  return textNormal.toUpperCase();
+                }
+                return textNormal;
+              }
+              font.family: root.keyFont.family
+              font.pixelSize: textNormal.length > 2 ? Math.max(9, Math.round(root.baseKeyFontSize * 0.85)) : root.baseKeyFontSize
+              font.bold: true
+              color: isActive ? root.accentColor : kBtn.customColor
+              verticalAlignment: Text.AlignVCenter
+            }
           }
         }
 
@@ -527,12 +568,32 @@ BarWidget {
           id: kMouse
           anchors.fill: parent
           hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-
-          onClicked: {
-            if (kBtn.isModifier) {
-              return; // handled in parent
+          acceptedButtons: Qt.LeftButton | Qt.RightButton
+          cursorShape: {
+            var isSuper = (kMouse.modifiers & Qt.MetaModifier) || root.superActive;
+            if (isSuper) {
+              return kMouse.buttons & Qt.RightButton ? Qt.SizeFDiagCursor : Qt.SizeAllCursor;
             }
+            return Qt.PointingHandCursor;
+          }
+
+          onPressed: function(mouse) {
+            var isSuper = (mouse.modifiers & Qt.MetaModifier) || root.superActive;
+            if (isSuper || mouse.button === Qt.RightButton) {
+              mouse.accepted = false; // Propagate down to cardDragArea
+              return;
+            }
+
+            if (kBtn.isModifier) {
+              if (kBtn.modifierName === "shift") root.shiftActive = !root.shiftActive;
+              else if (kBtn.modifierName === "caps") root.capsActive = !root.capsActive;
+              else if (kBtn.modifierName === "ctrl") root.ctrlActive = !root.ctrlActive;
+              else if (kBtn.modifierName === "super") root.superActive = !root.superActive;
+              else if (kBtn.modifierName === "alt") root.altActive = !root.altActive;
+              else if (kBtn.modifierName === "layout") root.cycleLayout();
+              return;
+            }
+
             if (kBtn.keyCommand !== "") {
               root.sendKey(kBtn.keyCommand);
             } else {
@@ -540,6 +601,108 @@ BarWidget {
               root.sendChar(ch);
             }
           }
+        }
+      }
+
+      // Background Drag & Resize Area (Hyprland SUPER + RMB/LMB window handling)
+      MouseArea {
+        id: cardDragArea
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        hoverEnabled: true
+        cursorShape: isResizing ? Qt.SizeFDiagCursor : (isMoving ? Qt.SizeAllCursor : Qt.ArrowCursor)
+
+        property bool isResizing: false
+        property bool isMoving: false
+        property real dragStartGlobalX: 0
+        property real dragStartGlobalY: 0
+        property real initialOskX: 0
+        property real initialOskY: 0
+        property real initialOskW: 0
+        property real initialOskH: 0
+        property bool resizeFromLeft: false
+        property bool resizeFromTop: false
+
+        onPressed: function(mouse) {
+          var isSuper = (mouse.modifiers & Qt.MetaModifier) || root.superActive;
+          var pt = cardDragArea.mapToItem(oskWindow, mouse.x, mouse.y);
+
+          // Super + Right Button -> Resize (Hyprland style)
+          // Also RMB on background -> Resize
+          if (mouse.button === Qt.RightButton || (isSuper && mouse.button === Qt.RightButton)) {
+            isResizing = true;
+            isMoving = false;
+            dragStartGlobalX = pt.x;
+            dragStartGlobalY = pt.y;
+            initialOskX = oskCard.x;
+            initialOskY = oskCard.y;
+            initialOskW = oskCard.width;
+            initialOskH = oskCard.height;
+            resizeFromLeft = (mouse.x < oskCard.width / 2);
+            resizeFromTop = (mouse.y < oskCard.height / 2);
+            mouse.accepted = true;
+            return;
+          }
+
+          // Super + Left Button -> Move (Hyprland style)
+          // Also LMB on background/margins -> Move
+          if ((isSuper && mouse.button === Qt.LeftButton) || mouse.button === Qt.LeftButton) {
+            isMoving = true;
+            isResizing = false;
+            dragStartGlobalX = pt.x;
+            dragStartGlobalY = pt.y;
+            initialOskX = oskCard.x;
+            initialOskY = oskCard.y;
+            mouse.accepted = true;
+            return;
+          }
+        }
+
+        onPositionChanged: function(mouse) {
+          var pt = cardDragArea.mapToItem(oskWindow, mouse.x, mouse.y);
+          var dx = pt.x - dragStartGlobalX;
+          var dy = pt.y - dragStartGlobalY;
+
+          if (isResizing) {
+            var minW = 600;
+            var maxW = oskWindow ? oskWindow.width - 20 : 1920;
+            var minH = 180;
+            var maxH = oskWindow ? oskWindow.height - 30 : 1080;
+
+            var newW = initialOskW;
+            var newH = initialOskH;
+            var newX = initialOskX;
+            var newY = initialOskY;
+
+            if (resizeFromLeft) {
+              newW = Math.max(minW, Math.min(maxW, initialOskW - dx));
+              newX = initialOskX + (initialOskW - newW);
+            } else {
+              newW = Math.max(minW, Math.min(maxW, initialOskW + dx));
+            }
+
+            if (resizeFromTop) {
+              newH = Math.max(minH, Math.min(maxH, initialOskH - dy));
+              newY = initialOskY + (initialOskH - newH);
+            } else {
+              newH = Math.max(minH, Math.min(maxH, initialOskH + dy));
+            }
+
+            root.oskWidth = Math.round(newW);
+            root.oskHeight = Math.round(newH);
+            root.oskX = Math.round(Math.max(10, Math.min(oskWindow.width - root.oskWidth - 10, newX)));
+            root.oskY = Math.round(Math.max(10, Math.min(oskWindow.height - root.oskHeight - 10, newY)));
+          } else if (isMoving) {
+            var targetX = initialOskX + dx;
+            var targetY = initialOskY + dy;
+            root.oskX = Math.round(Math.max(10, Math.min(oskWindow.width - oskCard.width - 10, targetX)));
+            root.oskY = Math.round(Math.max(10, Math.min(oskWindow.height - oskCard.height - 10, targetY)));
+          }
+        }
+
+        onReleased: function(mouse) {
+          isResizing = false;
+          isMoving = false;
         }
       }
 
@@ -552,9 +715,17 @@ BarWidget {
         // HEADER BAR (Title, Status Indicators, Controls)
         // ----------------------------------------------------
         RowLayout {
+          id: headerRow
           Layout.fillWidth: true
           Layout.preferredHeight: 22
-          spacing: 8
+          spacing: 6
+
+          Text {
+            text: "⠿"
+            font.family: root.monoFont.family
+            font.pixelSize: 12
+            color: "#6b7280"
+          }
 
           Text {
             text: "󰌌 VIRTUAL KEYBOARD // ON-SCREEN"
@@ -613,7 +784,48 @@ BarWidget {
             color: root.cyanColor
           }
 
+          Text {
+            visible: root.superActive
+            text: "[SUPER ON]"
+            font.family: root.monoFont.family
+            font.pixelSize: 10
+            font.bold: true
+            color: root.accentColor
+          }
+
+          Text {
+            text: "[Super+RMB: Resize]"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            color: "#6b7280"
+          }
+
           Item { Layout.fillWidth: true }
+
+          // Reset Window Size & Position Button
+          Rectangle {
+            implicitWidth: 54
+            implicitHeight: 20
+            radius: 3
+            color: resetMouse.containsMouse ? root.keyHover : root.keyBg
+            border.width: 1
+            border.color: root.keyBorder
+
+            Text {
+              anchors.centerIn: parent
+              text: "↺ RESET"
+              font.family: root.monoFont.family
+              font.pixelSize: 9
+              color: resetMouse.containsMouse ? root.accentColor : "#9ca3af"
+            }
+
+            MouseArea {
+              id: resetMouse
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.resetOskPosition()
+            }
+          }
 
           // Quick ESC Key
           Rectangle {
@@ -679,6 +891,7 @@ BarWidget {
         // ----------------------------------------------------
         RowLayout {
           Layout.fillWidth: true
+          Layout.fillHeight: true
           spacing: 4
 
           KeyBtn { textNormal: root.currentLayout === "CS" ? ";" : "`"; textShift: root.currentLayout === "CS" ? "°" : "~" }
@@ -707,6 +920,7 @@ BarWidget {
         // ----------------------------------------------------
         RowLayout {
           Layout.fillWidth: true
+          Layout.fillHeight: true
           spacing: 4
 
           KeyBtn { textNormal: "⇥ TAB"; keyCommand: "Tab"; customWidth: 70; customColor: root.cyanColor }
@@ -730,19 +944,16 @@ BarWidget {
         // ----------------------------------------------------
         RowLayout {
           Layout.fillWidth: true
+          Layout.fillHeight: true
           spacing: 4
 
           KeyBtn {
             textNormal: "⇪ CAPS"
             customWidth: 85
             isModifier: true
+            modifierName: "caps"
             isActive: root.capsActive
             customColor: root.capsActive ? root.cyanColor : root.keyText
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.capsActive = !root.capsActive
-            }
           }
           KeyBtn { textNormal: "a" }
           KeyBtn { textNormal: "s" }
@@ -769,19 +980,16 @@ BarWidget {
         // ----------------------------------------------------
         RowLayout {
           Layout.fillWidth: true
+          Layout.fillHeight: true
           spacing: 4
 
           KeyBtn {
             textNormal: "⇧ SHIFT"
             customWidth: 105
             isModifier: true
+            modifierName: "shift"
             isActive: root.shiftActive
             customColor: root.shiftActive ? root.accentColor : root.keyText
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.shiftActive = !root.shiftActive
-            }
           }
           KeyBtn { textNormal: "z" }
           KeyBtn { textNormal: "x" }
@@ -797,13 +1005,9 @@ BarWidget {
             textNormal: "⇧ SHIFT"
             customWidth: 110
             isModifier: true
+            modifierName: "shift"
             isActive: root.shiftActive
             customColor: root.shiftActive ? root.accentColor : root.keyText
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.shiftActive = !root.shiftActive
-            }
           }
         }
 
@@ -812,40 +1016,31 @@ BarWidget {
         // ----------------------------------------------------
         RowLayout {
           Layout.fillWidth: true
+          Layout.fillHeight: true
           spacing: 4
 
           KeyBtn {
             textNormal: "Ctrl"
             customWidth: 60
             isModifier: true
+            modifierName: "ctrl"
             isActive: root.ctrlActive
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.ctrlActive = !root.ctrlActive
-            }
           }
           KeyBtn {
-            textNormal: "󰘳 Win"
-            customWidth: 65
+            textNormal: "Super"
+            customIcon: "\ue900"
+            customIconFont: "omarchy"
+            customWidth: 74
             isModifier: true
+            modifierName: "super"
             isActive: root.superActive
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.superActive = !root.superActive
-            }
           }
           KeyBtn {
             textNormal: "Alt"
             customWidth: 60
             isModifier: true
+            modifierName: "alt"
             isActive: root.altActive
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.altActive = !root.altActive
-            }
           }
 
           // Wide Spacebar
@@ -861,13 +1056,9 @@ BarWidget {
             textNormal: "󰌌 " + root.currentLayout
             customWidth: 80
             isModifier: true
+            modifierName: "layout"
             customColor: root.warnColor
             customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12)
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.cycleLayout()
-            }
           }
 
           // Arrow Keys
@@ -875,6 +1066,54 @@ BarWidget {
           KeyBtn { textNormal: "▲"; keyCommand: "Up"; customWidth: 42 }
           KeyBtn { textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
           KeyBtn { textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
+        }
+      }
+
+      // Corner Resize Grip (Bottom-Right)
+      MouseArea {
+        id: cornerResizeGrip
+        width: 20
+        height: 20
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        cursorShape: Qt.SizeFDiagCursor
+        hoverEnabled: true
+
+        Text {
+          anchors.centerIn: parent
+          text: "◢"
+          font.family: root.monoFont.family
+          font.pixelSize: 10
+          color: cornerResizeGrip.containsMouse ? root.accentColor : "#4b5563"
+        }
+
+        property real dragStartX: 0
+        property real dragStartY: 0
+        property real startW: 0
+        property real startH: 0
+
+        onPressed: function(mouse) {
+          if (mouse.button === Qt.LeftButton || mouse.button === Qt.RightButton) {
+            var pt = cornerResizeGrip.mapToItem(oskWindow, mouse.x, mouse.y);
+            dragStartX = pt.x;
+            dragStartY = pt.y;
+            startW = oskCard.width;
+            startH = oskCard.height;
+          }
+        }
+
+        onPositionChanged: function(mouse) {
+          if (pressed) {
+            var pt = cornerResizeGrip.mapToItem(oskWindow, mouse.x, mouse.y);
+            var dx = pt.x - dragStartX;
+            var dy = pt.y - dragStartY;
+            var minW = 600;
+            var maxW = oskWindow ? oskWindow.width - 20 : 1920;
+            var minH = 180;
+            var maxH = oskWindow ? oskWindow.height - 30 : 1080;
+            root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
+            root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
+          }
         }
       }
     }
