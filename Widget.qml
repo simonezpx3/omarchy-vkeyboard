@@ -29,7 +29,9 @@ BarWidget {
   property int oskHeight: 285
   property real oskX: -1
   property real oskY: -1
-  readonly property int baseKeyFontSize: Math.max(10, Math.min(16, Math.round(root.oskHeight / 24)))
+  property int baseKeyFontSize: Math.max(10, Math.min(22, Math.round(12 * (oskCard ? oskCard.height / 285.0 : 1.0))))
+  property bool isResizingOsk: false
+  property bool isMovingOsk: false
 
   function resetOskPosition(): void {
     root.oskWidth = Math.min(1020, oskWindow ? oskWindow.width - 32 : 1020);
@@ -475,7 +477,7 @@ BarWidget {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
-    mask: Region { item: oskCard }
+    mask: Region { item: (root.isResizingOsk || root.isMovingOsk) ? oskWindow : oskCard }
     anchors { top: true; bottom: true; left: true; right: true }
 
     Rectangle {
@@ -569,19 +571,21 @@ BarWidget {
           anchors.fill: parent
           hoverEnabled: true
           acceptedButtons: Qt.LeftButton | Qt.RightButton
-          cursorShape: (kMouse.buttons & Qt.RightButton) ? Qt.SizeFDiagCursor : (root.superActive ? Qt.SizeAllCursor : Qt.PointingHandCursor)
+          cursorShape: (kMouse.buttons & Qt.RightButton) ? Qt.SizeFDiagCursor : ((mouse.modifiers & Qt.MetaModifier) ? Qt.SizeAllCursor : Qt.PointingHandCursor)
 
           onPressed: function(mouse) {
+            var globalPt = kMouse.mapToItem(oskWindow, mouse.x, mouse.y);
+            var isSuperKey = (kBtn.isModifier && kBtn.modifierName === "super");
+
             if (mouse.button === Qt.RightButton) {
-              var globalPt = kMouse.mapToItem(oskWindow, mouse.x, mouse.y);
               var cardPt = kMouse.mapToItem(oskCard, mouse.x, mouse.y);
               cardDragArea.startResize(globalPt, cardPt.x, cardPt.y);
               return;
             }
 
-            if (root.superActive) {
-              var gPt = kMouse.mapToItem(oskWindow, mouse.x, mouse.y);
-              cardDragArea.startMove(gPt);
+            // Physical Super + Left click on keys (except Super key itself) -> move window
+            if ((mouse.modifiers & Qt.MetaModifier) && mouse.button === Qt.LeftButton && !isSuperKey) {
+              cardDragArea.startMove(globalPt);
               return;
             }
 
@@ -641,6 +645,8 @@ BarWidget {
         function startResize(globalPt, localX, localY): void {
           isResizing = true;
           isMoving = false;
+          root.isResizingOsk = true;
+          root.isMovingOsk = false;
           dragStartGlobalX = globalPt.x;
           dragStartGlobalY = globalPt.y;
           initialOskX = oskCard.x;
@@ -687,11 +693,14 @@ BarWidget {
 
         function endResize(): void {
           isResizing = false;
+          root.isResizingOsk = false;
         }
 
         function startMove(globalPt): void {
           isMoving = true;
           isResizing = false;
+          root.isMovingOsk = true;
+          root.isResizingOsk = false;
           dragStartGlobalX = globalPt.x;
           dragStartGlobalY = globalPt.y;
           initialOskX = oskCard.x;
@@ -710,6 +719,7 @@ BarWidget {
 
         function endMove(): void {
           isMoving = false;
+          root.isMovingOsk = false;
         }
 
         onPressed: function(mouse) {
@@ -769,36 +779,6 @@ BarWidget {
             color: Qt.rgba(root.keyText.r, root.keyText.g, root.keyText.b, 0.5)
           }
 
-          // Layout Switcher Badge
-          Rectangle {
-            implicitWidth: layoutText.implicitWidth + 12
-            implicitHeight: 20
-            radius: 3
-            color: lBtnMouse.containsMouse ? root.keyHover : Qt.rgba(251/255, 191/255, 36/255, 0.15)
-            border.width: 1
-            border.color: root.warnColor
-
-            RowLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text {
-                id: layoutText
-                text: "★ " + root.currentLayout + " (" + (root.currentLayout === "CS" ? "Czech" : "English") + ")"
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: true
-                color: root.warnColor
-              }
-            }
-
-            MouseArea {
-              id: lBtnMouse
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.cycleLayout()
-            }
-          }
-
           // Active Modifier Badges
           Text {
             visible: root.shiftActive
@@ -827,7 +807,40 @@ BarWidget {
             color: root.accentColor
           }
 
-          Item { Layout.fillWidth: true }
+          // Interactive Header Spacer (Drag LMB to Move, RMB to Resize)
+          Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            MouseArea {
+              anchors.fill: parent
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
+              cursorShape: (mouse.button === Qt.RightButton) ? Qt.SizeFDiagCursor : Qt.SizeAllCursor
+
+              onPressed: function(mouse) {
+                var globalPt = mapToItem(oskWindow, mouse.x, mouse.y);
+                if (mouse.button === Qt.RightButton) {
+                  var cardPt = mapToItem(oskCard, mouse.x, mouse.y);
+                  cardDragArea.startResize(globalPt, cardPt.x, cardPt.y);
+                } else {
+                  cardDragArea.startMove(globalPt);
+                }
+              }
+
+              onPositionChanged: function(mouse) {
+                if (pressed) {
+                  var globalPt = mapToItem(oskWindow, mouse.x, mouse.y);
+                  if (cardDragArea.isResizing) cardDragArea.doResize(globalPt);
+                  else if (cardDragArea.isMoving) cardDragArea.doMove(globalPt);
+                }
+              }
+
+              onReleased: function(mouse) {
+                cardDragArea.endResize();
+                cardDragArea.endMove();
+              }
+            }
+          }
 
           // Reset Window Size & Position Button
           Rectangle {
@@ -1121,6 +1134,7 @@ BarWidget {
 
         onPressed: function(mouse) {
           var pt = cornerResizeGrip.mapToItem(oskWindow, mouse.x, mouse.y);
+          root.isResizingOsk = true;
           dragStartX = pt.x;
           dragStartY = pt.y;
           startW = oskCard.width;
@@ -1139,6 +1153,10 @@ BarWidget {
             root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
             root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
           }
+        }
+
+        onReleased: function(mouse) {
+          root.isResizingOsk = false;
         }
       }
 
@@ -1160,6 +1178,7 @@ BarWidget {
 
         onPressed: function(mouse) {
           var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          root.isResizingOsk = true;
           startGlobalX = pt.x;
           startW = oskCard.width;
           startX = oskCard.x;
@@ -1175,6 +1194,10 @@ BarWidget {
             root.oskWidth = Math.round(newW);
             root.oskX = Math.round(startX + (startW - newW));
           }
+        }
+
+        onReleased: function(mouse) {
+          root.isResizingOsk = false;
         }
       }
 
@@ -1194,6 +1217,7 @@ BarWidget {
 
         onPressed: function(mouse) {
           var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          root.isResizingOsk = true;
           startGlobalX = pt.x;
           startW = oskCard.width;
         }
@@ -1206,6 +1230,10 @@ BarWidget {
             var maxW = oskWindow ? oskWindow.width - 20 : 1920;
             root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
           }
+        }
+
+        onReleased: function(mouse) {
+          root.isResizingOsk = false;
         }
       }
 
@@ -1226,6 +1254,7 @@ BarWidget {
 
         onPressed: function(mouse) {
           var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          root.isResizingOsk = true;
           startGlobalY = pt.y;
           startH = oskCard.height;
           startY = oskCard.y;
@@ -1241,6 +1270,10 @@ BarWidget {
             root.oskHeight = Math.round(newH);
             root.oskY = Math.round(startY + (startH - newH));
           }
+        }
+
+        onReleased: function(mouse) {
+          root.isResizingOsk = false;
         }
       }
 
@@ -1260,6 +1293,7 @@ BarWidget {
 
         onPressed: function(mouse) {
           var pt = mapToItem(oskWindow, mouse.x, mouse.y);
+          root.isResizingOsk = true;
           startGlobalY = pt.y;
           startH = oskCard.height;
         }
@@ -1272,6 +1306,10 @@ BarWidget {
             var maxH = oskWindow ? oskWindow.height - 30 : 1080;
             root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
           }
+        }
+
+        onReleased: function(mouse) {
+          root.isResizingOsk = false;
         }
       }
     }
