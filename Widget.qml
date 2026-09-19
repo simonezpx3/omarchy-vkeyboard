@@ -57,8 +57,6 @@ BarWidget {
   property real oskX: -1
   property real oskY: -1
   property real oskOpacity: setting("oskOpacity", 1.0)
-  readonly property real heightScale: Math.max(0.65, Math.min(2.5, (root.oskHeight / 285.0)))
-  readonly property int baseKeyFontSize: Math.max(10, Math.min(32, Math.round(16 * heightScale)))
   property bool isResizingOsk: false
   property bool isMovingOsk: false
 
@@ -84,6 +82,31 @@ BarWidget {
   readonly property bool isFull: root.currentFormat === "Full Size"
   readonly property bool hasNavCluster: root.isTKL || root.isFull
   readonly property bool hasNumpad: root.isFull
+
+  // Minimum & Base Reference Dimensions per Format
+  readonly property int minOskWidth: {
+    if (root.currentFormat === "60%") return 640;
+    if (root.currentFormat === "65%") return 680;
+    if (root.currentFormat === "75%") return 740;
+    if (root.currentFormat === "80% (TKL)") return 820;
+    if (root.currentFormat === "Full Size") return 980;
+    return 720; // macOS Layout
+  }
+  readonly property int minOskHeight: root.hasFRow ? 220 : 190
+
+  readonly property real baseFormatWidth: {
+    if (root.currentFormat === "60%") return 820.0;
+    if (root.currentFormat === "65%") return 880.0;
+    if (root.currentFormat === "75%") return 960.0;
+    if (root.currentFormat === "80% (TKL)") return 1120.0;
+    if (root.currentFormat === "Full Size") return 1380.0;
+    return 960.0; // macOS Layout
+  }
+
+  readonly property real widthScale: Math.max(0.55, Math.min(2.0, (root.oskWidth / root.baseFormatWidth)))
+  readonly property real heightScale: Math.max(0.55, Math.min(2.0, (root.oskHeight / 285.0)))
+  readonly property real scaleFactor: Math.min(widthScale, heightScale)
+  readonly property int baseKeyFontSize: Math.max(8, Math.min(28, Math.round(15 * root.scaleFactor)))
 
   function getFormatDefaultWidth(fmt): int {
     if (fmt === "60%") return 820;
@@ -862,48 +885,54 @@ BarWidget {
           property string customIcon: ""
           property string customIconFont: ""
 
-          readonly property real widthScale: Math.max(0.65, Math.min(1.8, oskCard.width / 1020.0))
+          readonly property real btnWidthScale: root.widthScale
 
           Layout.fillWidth: customWidth === 0
-          Layout.preferredWidth: customWidth > 0 ? Math.round(customWidth * widthScale) : 0
+          Layout.preferredWidth: customWidth > 0 ? Math.round(customWidth * btnWidthScale) : 0
           Layout.fillHeight: true
-          Layout.minimumHeight: 24
+          Layout.minimumHeight: 18
           radius: 4
+          clip: true
           color: kMouse.pressed ? root.keyPressed : (kMouse.containsMouse ? root.keyHover : (isActive ? Qt.rgba(52/255, 211/255, 153/255, 0.25) : customBg))
           border.width: 1
           border.color: isActive ? root.accentColor : (kMouse.containsMouse ? "#4b5563" : root.keyBorder)
 
           RowLayout {
             anchors.centerIn: parent
-            spacing: 3
+            width: Math.min(parent.width - 4, implicitWidth)
+            spacing: 2
 
             Text {
               visible: kBtn.customIcon !== ""
               Layout.alignment: Qt.AlignVCenter
               text: kBtn.customIcon
               font.family: kBtn.customIconFont !== "" ? kBtn.customIconFont : root.monoFont.family
-              font.pixelSize: Math.max(12, Math.round(root.baseKeyFontSize * 1.1))
+              font.pixelSize: Math.max(9, Math.round(root.baseKeyFontSize * 1.1))
               color: isActive ? root.accentColor : kBtn.customColor
               verticalAlignment: Text.AlignVCenter
             }
 
             ColumnLayout {
               Layout.alignment: Qt.AlignVCenter
-              spacing: 1
+              Layout.maximumWidth: Math.max(8, kBtn.width - (kBtn.customIcon !== "" ? 18 : 4))
+              spacing: 0
 
               // Shifted character (if present)
               Text {
                 visible: textShift !== "" && textShift !== textNormal
                 Layout.alignment: Qt.AlignHCenter
+                Layout.maximumWidth: parent.Layout.maximumWidth
                 text: textShift
                 font.family: root.monoFont.family
-                font.pixelSize: Math.max(7, Math.round(root.baseKeyFontSize * 0.65))
+                font.pixelSize: Math.max(6, Math.round(root.baseKeyFontSize * 0.65))
                 color: root.shiftActive ? root.accentColor : "#9ca3af"
+                elide: Text.ElideNone
               }
 
               // Main character / label
               Text {
                 Layout.alignment: Qt.AlignHCenter
+                Layout.maximumWidth: parent.Layout.maximumWidth
                 text: {
                   if (root.shiftActive && textShift !== "") return textShift;
                   if (root.capsActive || root.shiftActive) {
@@ -912,10 +941,18 @@ BarWidget {
                   return textNormal;
                 }
                 font.family: root.keyFont.family
-                font.pixelSize: (textNormal.length > 3) ? Math.max(10, Math.round(root.baseKeyFontSize * 0.8)) : ((textNormal.length > 1) ? Math.max(11, Math.round(root.baseKeyFontSize * 0.9)) : root.baseKeyFontSize)
+                font.pixelSize: {
+                  var base = root.baseKeyFontSize;
+                  if (textNormal.length > 5) return Math.max(7, Math.round(base * 0.70));
+                  if (textNormal.length > 3) return Math.max(7, Math.round(base * 0.80));
+                  if (textNormal.length > 1) return Math.max(8, Math.round(base * 0.90));
+                  return base;
+                }
                 font.bold: true
                 color: isActive ? root.accentColor : kBtn.customColor
                 verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
               }
             }
           }
@@ -1052,9 +1089,9 @@ BarWidget {
             if (!isResizing) return;
             var dx = globalPt.x - dragStartGlobalX;
             var dy = globalPt.y - dragStartGlobalY;
-            var minW = 600;
+            var minW = root.minOskWidth;
             var maxW = oskWindow ? oskWindow.width - 20 : 1920;
-            var minH = 180;
+            var minH = root.minOskHeight;
             var maxH = oskWindow ? oskWindow.height - 30 : 1080;
 
             var newW = initialOskW;
@@ -1149,6 +1186,7 @@ BarWidget {
             spacing: 6
 
             Text {
+              visible: root.oskWidth >= 760
               text: "⠿"
               font.family: root.monoFont.family
               font.pixelSize: 12
@@ -1156,7 +1194,7 @@ BarWidget {
             }
 
             Text {
-              text: "󰌌 VIRTUAL KEYBOARD // ON-SCREEN"
+              text: root.oskWidth < 800 ? "󰌌 KEYBOARD" : (root.oskWidth < 960 ? "󰌌 VIRTUAL KEYBOARD" : "󰌌 VIRTUAL KEYBOARD // ON-SCREEN")
               font.family: root.monoFont.family
               font.pixelSize: 11
               font.bold: true
@@ -1164,6 +1202,7 @@ BarWidget {
             }
 
             Text {
+              visible: root.oskWidth >= 880
               text: "[RMB: Resize | Drag: Move]"
               font.family: root.monoFont.family
               font.pixelSize: 9
@@ -1933,9 +1972,9 @@ BarWidget {
               var pt = cornerResizeGrip.mapToItem(oskRootItem, mouse.x, mouse.y);
               var dx = pt.x - dragStartX;
               var dy = pt.y - dragStartY;
-              var minW = 600;
+              var minW = root.minOskWidth;
               var maxW = oskWindow ? oskWindow.width - 20 : 1920;
-              var minH = 180;
+              var minH = root.minOskHeight;
               var maxH = oskWindow ? oskWindow.height - 30 : 1080;
               root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
               root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
@@ -1975,7 +2014,7 @@ BarWidget {
             if (pressed) {
               var pt = mapToItem(oskRootItem, mouse.x, mouse.y);
               var dx = pt.x - startGlobalX;
-              var minW = 600;
+              var minW = root.minOskWidth;
               var maxW = oskWindow ? oskWindow.width - 20 : 1920;
               var newW = Math.max(minW, Math.min(maxW, startW - dx));
               root.oskWidth = Math.round(newW);
@@ -2013,7 +2052,7 @@ BarWidget {
             if (pressed) {
               var pt = mapToItem(oskRootItem, mouse.x, mouse.y);
               var dx = pt.x - startGlobalX;
-              var minW = 600;
+              var minW = root.minOskWidth;
               var maxW = oskWindow ? oskWindow.width - 20 : 1920;
               root.oskWidth = Math.round(Math.max(minW, Math.min(maxW, startW + dx)));
             }
@@ -2051,7 +2090,7 @@ BarWidget {
             if (pressed) {
               var pt = mapToItem(oskRootItem, mouse.x, mouse.y);
               var dy = pt.y - startGlobalY;
-              var minH = 180;
+              var minH = root.minOskHeight;
               var maxH = oskWindow ? oskWindow.height - 30 : 1080;
               var newH = Math.max(minH, Math.min(maxH, startH - dy));
               root.oskHeight = Math.round(newH);
@@ -2089,7 +2128,7 @@ BarWidget {
             if (pressed) {
               var pt = mapToItem(oskRootItem, mouse.x, mouse.y);
               var dy = pt.y - startGlobalY;
-              var minH = 180;
+              var minH = root.minOskHeight;
               var maxH = oskWindow ? oskWindow.height - 30 : 1080;
               root.oskHeight = Math.round(Math.max(minH, Math.min(maxH, startH + dy)));
             }
