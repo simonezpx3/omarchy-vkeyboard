@@ -230,7 +230,7 @@ def set_layout(target):
         subprocess.run(["hyprctl", "switchxkblayout", "all", "0"], capture_output=True, timeout=2, check=False)
 
 def type_key(key_name, modifiers=None):
-    cmd = ["wtype"]
+    cmd = ["wtype", "-s", "10"]
     if modifiers:
         for mod in modifiers:
             cmd.extend(["-M", mod])
@@ -243,7 +243,7 @@ def type_key(key_name, modifiers=None):
 def type_text(text, modifiers=None):
     if not text:
         return
-    cmd = ["wtype"]
+    cmd = ["wtype", "-s", "10"]
     if modifiers:
         for mod in modifiers:
             cmd.extend(["-M", mod])
@@ -252,6 +252,144 @@ def type_text(text, modifiers=None):
         for mod in reversed(modifiers):
             cmd.extend(["-m", mod])
     subprocess.run(cmd, timeout=2, check=False)
+
+def is_terminal():
+    try:
+        r = subprocess.run(["hyprctl", "-j", "activewindow"], capture_output=True, text=True, timeout=1, check=False)
+        w = json.loads(r.stdout)
+        tags = w.get("tags", [])
+        cls = w.get("class", "").lower()
+        if any("terminal" in t.lower() for t in tags):
+            return True
+        if any(term in cls for term in ("alacritty", "foot", "kitty", "term")):
+            return True
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        pass
+    return False
+
+def load_keybindings_map():
+    import glob
+    import os
+
+    cache_files = glob.glob(os.path.expanduser("~/.cache/omarchy/keybindings-*.records"))
+    if not cache_files:
+        try:
+            subprocess.run(["omarchy", "menu", "keybindings", "--print"], capture_output=True, timeout=2, check=False)
+            cache_files = glob.glob(os.path.expanduser("~/.cache/omarchy/keybindings-*.records"))
+        except (subprocess.SubprocessError, OSError):
+            pass
+    if not cache_files:
+        return {}
+
+    cache_file = max(cache_files, key=os.path.getmtime)
+    mapping = {}
+    try:
+        with open(cache_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.rstrip("\r\n")
+                if not line or "\t" not in line:
+                    continue
+                parts = line.split("\t")
+                left = parts[0]
+                disp = parts[1] if len(parts) > 1 else ""
+                arg = parts[2] if len(parts) > 2 else ""
+
+                combo_part = left.split("→")[0].strip()
+                tokens = combo_part.replace("+", " ").split()
+                c_mods = set()
+                c_keys = []
+                for t in tokens:
+                    tu = t.upper()
+                    if tu in ("SUPER", "WIN", "LOGO"):
+                        c_mods.add("SUPER")
+                    elif tu in ("SHIFT",):
+                        c_mods.add("SHIFT")
+                    elif tu in ("CTRL", "CONTROL"):
+                        c_mods.add("CTRL")
+                    elif tu in ("ALT",):
+                        c_mods.add("ALT")
+                    else:
+                        c_keys.append(tu)
+                c_key = " ".join(c_keys)
+                mapping[(frozenset(c_mods), c_key)] = (disp, arg)
+    except OSError:
+        pass
+    return mapping
+
+def dispatch_shortcut(key_name, modifiers=None):
+    if not key_name:
+        return
+    mods_list = [m.lower().strip() for m in modifiers] if modifiers else []
+    mod_set = set()
+    for m in mods_list:
+        if m in ("super", "win", "logo"):
+            mod_set.add("SUPER")
+        elif m == "shift":
+            mod_set.add("SHIFT")
+        elif m in ("ctrl", "control"):
+            mod_set.add("CTRL")
+        elif m == "alt":
+            mod_set.add("ALT")
+
+    key_norm = key_name.upper().strip()
+    if key_norm in ("RETURN", "ENTER"):
+        key_norm = "RETURN"
+    elif key_norm in (" ", "SPACE"):
+        key_norm = "SPACE"
+    elif key_norm == "BACKSPACE":
+        key_norm = "BACKSPACE"
+    elif key_norm == "ESCAPE":
+        key_norm = "ESCAPE"
+    elif key_norm in ("DELETE", "DEL"):
+        key_norm = "DELETE"
+    elif key_norm in ("PAGE_UP", "PRIOR", "PGUP"):
+        key_norm = "PAGE_UP"
+    elif key_norm in ("PAGE_DOWN", "NEXT", "PGDN"):
+        key_norm = "PAGE_DOWN"
+
+    # Special handling for universal clipboard actions
+    if mod_set == {"SUPER"}:
+        if key_norm == "C":
+            if is_terminal():
+                type_key("Insert", ["ctrl"])
+            else:
+                type_key("c", ["ctrl"])
+            return
+        elif key_norm == "V":
+            if is_terminal():
+                type_key("Insert", ["shift"])
+            else:
+                type_key("v", ["ctrl"])
+            return
+        elif key_norm == "X":
+            type_key("x", ["ctrl"])
+            return
+
+    mapping = load_keybindings_map()
+    entry = mapping.get((frozenset(mod_set), key_norm))
+    if not entry and key_norm.isdigit():
+        entry = mapping.get((frozenset(mod_set), key_norm))
+
+    if entry:
+        disp, arg = entry
+        if disp == "exec" and arg:
+            safe_arg = arg.replace("\\", "\\\\").replace("'", "\\'")
+            res = subprocess.run(["hyprctl", "dispatch", f"hl.dsp.exec_cmd('{safe_arg}')"], capture_output=True, text=True, timeout=2, check=False)
+            if res.returncode != 0:
+                subprocess.Popen(arg, shell=True, start_new_session=True)
+            return
+        elif disp == "lua" and arg:
+            subprocess.run(["hyprctl", "dispatch", arg], capture_output=True, timeout=2, check=False)
+            return
+        elif disp and arg:
+            subprocess.run(["hyprctl", "dispatch", disp, arg], capture_output=True, timeout=2, check=False)
+            return
+        elif disp:
+            subprocess.run(["hyprctl", "dispatch", disp], capture_output=True, timeout=2, check=False)
+            return
+
+    # Fallback to wtype
+    type_key(key_name, mods_list)
 
 def main():
     if len(sys.argv) < 2:
@@ -277,6 +415,10 @@ def main():
         text = sys.argv[2]
         mods = sys.argv[3].split(",") if len(sys.argv) > 3 and sys.argv[3] else None
         type_text(text, mods)
+    elif action == "dispatch":
+        key_name = sys.argv[2] if len(sys.argv) > 2 else ""
+        mods = sys.argv[3].split(",") if len(sys.argv) > 3 and sys.argv[3] else None
+        dispatch_shortcut(key_name, mods)
 
 if __name__ == "__main__":
     main()

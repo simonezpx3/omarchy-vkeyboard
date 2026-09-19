@@ -237,26 +237,7 @@ BarWidget {
     }
   }
 
-  // Keystroke & Command Execution (Strict Left/Right Keysym & Level 3 AltGr Support)
-  function sendChar(char) {
-    if (!char) return;
-    var args = ["wtype", "-s", "10"];
-    if (root.ctrlActive) args.push("-M", "ctrl");
-    if (root.altActive) args.push("-M", "alt");
-    if (root.altGrActive) args.push("-M", "altgr");
-    if (root.superActive) args.push("-M", "logo");
-    if (root.shiftActive) args.push("-M", "shift");
-
-    args.push("--", char);
-
-    if (root.shiftActive) args.push("-m", "shift");
-    if (root.superActive) args.push("-m", "logo");
-    if (root.altGrActive) args.push("-m", "altgr");
-    if (root.altActive) args.push("-m", "alt");
-    if (root.ctrlActive) args.push("-m", "ctrl");
-    Quickshell.execDetached(args);
-
-    // Auto-release one-shot modifiers
+  function resetModifiers() {
     if (root.shiftLActive) root.shiftLActive = false;
     if (root.shiftRActive) root.shiftRActive = false;
     if (root.ctrlLActive) root.ctrlLActive = false;
@@ -265,6 +246,37 @@ BarWidget {
     if (root.altRActive) root.altRActive = false;
     if (root.altGrActive) root.altGrActive = false;
     if (root.superActive) root.superActive = false;
+  }
+
+  // Keystroke & Command Execution (Strict Left/Right Keysym & Level 3 AltGr Support)
+  function sendChar(char) {
+    if (!char) return;
+
+    if (root.superActive) {
+      var sMods = ["super"];
+      if (root.shiftActive) sMods.push("shift");
+      if (root.ctrlActive) sMods.push("ctrl");
+      if (root.altActive) sMods.push("alt");
+      Quickshell.execDetached(["vkeyboard-ctl", "dispatch", char, sMods.join(",")]);
+      root.resetModifiers();
+      return;
+    }
+
+    var args = ["wtype", "-s", "10"];
+    if (root.ctrlActive) args.push("-M", "ctrl");
+    if (root.altActive) args.push("-M", "alt");
+    if (root.altGrActive) args.push("-M", "altgr");
+    if (root.shiftActive) args.push("-M", "shift");
+
+    args.push("--", char);
+
+    if (root.shiftActive) args.push("-m", "shift");
+    if (root.altGrActive) args.push("-m", "altgr");
+    if (root.altActive) args.push("-m", "alt");
+    if (root.ctrlActive) args.push("-m", "ctrl");
+    Quickshell.execDetached(args);
+
+    root.resetModifiers();
   }
 
   function sendKey(keyName) {
@@ -279,15 +291,7 @@ BarWidget {
         Quickshell.execDetached(["/usr/share/omarchy/bin/omarchy-capture-screenshot"]);
       }
       Quickshell.execDetached(["wtype", "-k", "Print"]);
-
-      if (root.shiftLActive) root.shiftLActive = false;
-      if (root.shiftRActive) root.shiftRActive = false;
-      if (root.ctrlLActive) root.ctrlLActive = false;
-      if (root.ctrlRActive) root.ctrlRActive = false;
-      if (root.altLActive) root.altLActive = false;
-      if (root.altRActive) root.altRActive = false;
-      if (root.altGrActive) root.altGrActive = false;
-      if (root.superActive) root.superActive = false;
+      root.resetModifiers();
       return;
     }
 
@@ -319,30 +323,31 @@ BarWidget {
     if (targetKey === "Prior") targetKey = "Page_Up";
     if (targetKey === "Next") targetKey = "Page_Down";
 
+    if (root.superActive) {
+      var kMods = ["super"];
+      if (root.shiftActive) kMods.push("shift");
+      if (root.ctrlActive) kMods.push("ctrl");
+      if (root.altActive) kMods.push("alt");
+      Quickshell.execDetached(["vkeyboard-ctl", "dispatch", targetKey, kMods.join(",")]);
+      root.resetModifiers();
+      return;
+    }
+
     var args = ["wtype", "-s", "10"];
     if (root.ctrlActive) args.push("-M", "ctrl");
     if (root.altActive) args.push("-M", "alt");
     if (root.altGrActive) args.push("-M", "altgr");
-    if (root.superActive) args.push("-M", "logo");
     if (root.shiftActive) args.push("-M", "shift");
 
     args.push("-k", targetKey);
 
     if (root.shiftActive) args.push("-m", "shift");
-    if (root.superActive) args.push("-m", "logo");
     if (root.altGrActive) args.push("-m", "altgr");
     if (root.altActive) args.push("-m", "alt");
     if (root.ctrlActive) args.push("-m", "ctrl");
     Quickshell.execDetached(args);
 
-    if (root.shiftLActive) root.shiftLActive = false;
-    if (root.shiftRActive) root.shiftRActive = false;
-    if (root.ctrlLActive) root.ctrlLActive = false;
-    if (root.ctrlRActive) root.ctrlRActive = false;
-    if (root.altLActive) root.altLActive = false;
-    if (root.altRActive) root.altRActive = false;
-    if (root.altGrActive) root.altGrActive = false;
-    if (root.superActive) root.superActive = false;
+    root.resetModifiers();
   }
 
   function setLayout(target) {
