@@ -252,6 +252,28 @@ BarWidget {
 
   function sendKey(keyName) {
     if (!keyName) return;
+
+    if (keyName === "Print" || keyName === "Sys_Req") {
+      // Wayland virtual keyboard protocol isolates synthetic keys from compositor global bindings.
+      // Explicitly trigger the Omarchy desktop screenshot / OCR tool.
+      if (root.superActive && (root.shiftLActive || root.shiftRActive)) {
+        Quickshell.execDetached(["/usr/share/omarchy/bin/omarchy-capture-text"]);
+      } else {
+        Quickshell.execDetached(["/usr/share/omarchy/bin/omarchy-capture-screenshot"]);
+      }
+      Quickshell.execDetached(["wtype", "-k", "Print"]);
+
+      if (root.shiftLActive) root.shiftLActive = false;
+      if (root.shiftRActive) root.shiftRActive = false;
+      if (root.ctrlLActive) root.ctrlLActive = false;
+      if (root.ctrlRActive) root.ctrlRActive = false;
+      if (root.altLActive) root.altLActive = false;
+      if (root.altRActive) root.altRActive = false;
+      if (root.altGrActive) root.altGrActive = false;
+      if (root.superActive) root.superActive = false;
+      return;
+    }
+
     var args = ["wtype"];
     if (root.ctrlLActive) args.push("-P", "Control_L");
     if (root.ctrlRActive) args.push("-P", "Control_R");
