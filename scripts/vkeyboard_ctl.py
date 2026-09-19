@@ -2,6 +2,8 @@
 """
 Virtual Keyboard & Layout Controller for Omarchy / Hyprland.
 Provides CLI actions for layout detection, switching (CS/EN), and keystroke injection.
+
+Signature: s&a (simonez & Arci)
 """
 
 import json

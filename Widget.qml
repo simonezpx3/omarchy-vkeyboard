@@ -1,3 +1,6 @@
+// Virtual Keyboard & Layout Switcher for Omarchy / Hyprland
+// Signature: s&a (simonez & Arci)
+
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -836,6 +839,30 @@ BarWidget {
             }
           }
         }
+
+        // 1px Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // Subtle s&a footer bar
+        RowLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 4
+          Layout.rightMargin: 4
+          Text {
+            text: "v1.5.9"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            color: "#4b5563"
+          }
+          Item { Layout.fillWidth: true }
+          Text {
+            text: "s&a"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            font.bold: true
+            color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.5)
+          }
+        }
       }
     }
   }
@@ -1212,6 +1239,14 @@ BarWidget {
               font.pixelSize: 11
               font.bold: true
               color: root.keyText
+            }
+
+            Text {
+              text: "s&a"
+              font.family: root.monoFont.family
+              font.pixelSize: 9
+              font.bold: true
+              color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.6)
             }
 
             Text {
