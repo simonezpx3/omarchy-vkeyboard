@@ -1686,7 +1686,7 @@ BarWidget {
             spacing: 4
 
             KeyBtn {
-              textNormal: root.isMac ? "shift (L)" : "⇧ SHIFT"
+              textNormal: root.isMac ? "shift" : "⇧ SHIFT"
               customWidth: root.isMac ? 95 : 105
               isModifier: true
               modifierName: "shift_l"
@@ -1704,7 +1704,7 @@ BarWidget {
             KeyBtn { textNormal: "."; textShift: root.currentLayout === "CS" ? ":" : ">" }
             KeyBtn { textNormal: root.currentLayout === "CS" ? "-" : "/"; textShift: root.currentLayout === "CS" ? "_" : "?" }
             KeyBtn {
-              textNormal: root.isMac ? "shift (R)" : (root.sysShiftsToggle ? "SHIFT ⇧ (TOGGLE)" : "SHIFT ⇧")
+              textNormal: root.isMac ? "shift" : (root.sysShiftsToggle ? "SHIFT ⇧ (TOGGLE)" : "SHIFT ⇧")
               customWidth: (root.is65 || root.is75 || root.isMac) ? 75 : 110
               isModifier: true
               modifierName: "shift_r"
@@ -1762,7 +1762,7 @@ BarWidget {
             }
             KeyBtn {
               visible: root.isMac
-              textNormal: "⌥ option (L)"
+              textNormal: "⌥ option"
               customWidth: 70
               isModifier: true
               modifierName: "alt_l"
@@ -1774,7 +1774,7 @@ BarWidget {
             KeyBtn { visible: root.isMac; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
             KeyBtn {
               visible: root.isMac
-              textNormal: "⌥ option (R)"
+              textNormal: "⌥ option"
               customWidth: 70
               isModifier: true
               modifierName: "alt_r"
@@ -1789,7 +1789,7 @@ BarWidget {
             // Standard Modifiers (60%, 65%, 75%, 80% TKL, Full Size)
             KeyBtn {
               visible: !root.isMac
-              textNormal: root.sysSwapLaltLctl ? "Alt (L)" : "Ctrl (L)"
+              textNormal: root.sysSwapLaltLctl ? "Alt" : "Ctrl"
               customWidth: 60
               isModifier: true
               modifierName: root.sysSwapLaltLctl ? "alt_l" : "ctrl_l"
@@ -1808,7 +1808,7 @@ BarWidget {
             }
             KeyBtn {
               visible: !root.isMac
-              textNormal: root.sysSwapLaltLctl ? "Ctrl (L)" : "Alt (L)"
+              textNormal: root.sysSwapLaltLctl ? "Ctrl" : "Alt"
               customWidth: 60
               isModifier: true
               modifierName: root.sysSwapLaltLctl ? "ctrl_l" : "alt_l"
@@ -1825,10 +1825,10 @@ BarWidget {
               customColor: "#9ca3af"
             }
 
-            // Right Modifiers (AltGr for European/Czech special characters, RAlt for US)
+            // Right Modifiers (Alt for European/Czech special characters, RAlt for US)
             KeyBtn {
               visible: !root.isMac
-              textNormal: root.sysHasAltGr ? "AltGr" : "Alt (R)"
+              textNormal: "Alt"
               customWidth: 55
               isModifier: true
               modifierName: root.sysHasAltGr ? "altgr" : "alt_r"
@@ -1855,7 +1855,7 @@ BarWidget {
             }
             KeyBtn {
               visible: !root.isMac && (root.currentFormat === "60%" || root.hasNavCluster)
-              textNormal: root.sysRctrlIsCompose ? "Comp (R)" : "Ctrl (R)"
+              textNormal: root.sysRctrlIsCompose ? "Comp" : "Ctrl"
               customWidth: 55
               isModifier: true
               modifierName: root.sysRctrlIsCompose ? "compose" : "ctrl_r"
