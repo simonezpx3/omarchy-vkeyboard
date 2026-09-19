@@ -3,7 +3,7 @@
 An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `wtype` keystroke injection, system shortcut dispatching, dynamic multi-language XKB layout switching, and **Unified CRT Monolithic Grid** styling for Omarchy Linux & Hyprland.
 
 **Authors:** `simonez & Arci`  
-**Version:** `1.5.8`  
+**Version:** `1.5.9`  
 **License:** MIT  
 
 ---
