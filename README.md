@@ -6,6 +6,8 @@ An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `w
 **Version:** `1.5.9`  
 **License:** MIT  
 
+![Virtual Keyboard Demo](assets/demo.gif)
+
 ---
 
 ## 1. Core Architecture & Window Focus Resolution
