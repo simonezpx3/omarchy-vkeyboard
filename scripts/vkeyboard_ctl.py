@@ -79,7 +79,6 @@ LAYOUT_NAMES = {
     "IT": "Italian",
     "PL": "Polish (Programmers)",
     "UA": "Ukrainian",
-    "RU": "Russian",
     "PT": "Portuguese",
     "NL": "Dutch",
     "SE": "Swedish",
@@ -110,8 +109,6 @@ def parse_layout_code(keymap_name, layout_tag=""):
         return "PL"
     if "ukrainian" in km or lt == "ua":
         return "UA"
-    if "russian" in km or lt == "ru":
-        return "RU"
     if "portuguese" in km or lt in ("pt", "br"):
         return "PT"
     if "dutch" in km or lt == "nl":
