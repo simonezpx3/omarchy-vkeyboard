@@ -5,7 +5,7 @@
   "version": "1.5.9",
   "author": "simonez & Arci",
   "license": "MIT",
-  "description": "On-screen virtual keyboard with instant wtype typing, CS/ENG layout switcher, and Unified CRT Monolithic Grid styling for Omarchy.",
+  "description": "On-screen virtual keyboard with instant wtype typing, multi-language XKB layout switcher, and Unified CRT Monolithic Grid styling for Omarchy.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,7 +14,7 @@
   },
   "barWidget": {
     "displayName": "Virtual Keyboard",
-    "description": "Left click toggles on-screen virtual keyboard, right click selects CS/ENG layout.",
+    "description": "Left click toggles on-screen virtual keyboard, right click selects XKB layout.",
     "category": "System",
     "aliases": ["vkeyboard", "osk", "keyboard-layout", "virtual-keyboard"],
     "allowMultiple": false,
@@ -27,7 +27,7 @@
         "key": "showBadge",
         "type": "boolean",
         "label": "Show Layout Badge",
-        "description": "Show CS/EN text badge next to keyboard icon in bar.",
+        "description": "Show layout language badge next to keyboard icon in bar.",
         "defaultValue": true
       }
     ]

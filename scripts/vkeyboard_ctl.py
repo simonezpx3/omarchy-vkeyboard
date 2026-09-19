@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Virtual Keyboard & Layout Controller for Omarchy / Hyprland.
-Provides CLI actions for layout detection, switching (CS/EN), and keystroke injection.
+Provides CLI actions for layout detection, multi-language XKB switching, and keystroke injection.
 
 Signature: s&a (simonez & Arci)
 """
