@@ -23,18 +23,32 @@ BarWidget {
   property bool ctrlActive: false
   property bool altActive: false
   property bool superActive: false
+  property bool fnActive: false
 
-  // Virtual Keyboard Window Dimensions & Position
+  // Virtual Keyboard Window Dimensions, Position & Opacity
   property var availableFormats: ["60%", "65%", "75%", "80% (TKL)", "Full Size", "Apple Magic Keyboard"]
   property string currentFormat: "75%"
   property int oskWidth: 960
   property int oskHeight: 285
   property real oskX: -1
   property real oskY: -1
+  property real oskOpacity: setting("oskOpacity", 1.0)
   readonly property real heightScale: Math.max(0.65, Math.min(2.5, (root.oskHeight / 285.0)))
-  readonly property int baseKeyFontSize: Math.max(10, Math.min(28, Math.round(14 * heightScale)))
+  readonly property int baseKeyFontSize: Math.max(10, Math.min(32, Math.round(16 * heightScale)))
   property bool isResizingOsk: false
   property bool isMovingOsk: false
+
+  function setOskOpacity(val): void {
+    var clamped = Math.max(0.25, Math.min(1.0, Math.round(val * 100) / 100));
+    root.oskOpacity = clamped;
+  }
+
+  function cycleOpacity(): void {
+    if (root.oskOpacity >= 0.95) setOskOpacity(0.80);
+    else if (root.oskOpacity >= 0.75) setOskOpacity(0.60);
+    else if (root.oskOpacity >= 0.55) setOskOpacity(0.40);
+    else setOskOpacity(1.0);
+  }
 
   // Format Helper Flags
   readonly property bool isApple: root.currentFormat === "Apple Magic Keyboard"
@@ -115,6 +129,9 @@ BarWidget {
     }
     function setFormat(fmt: string): void { root.setFormat(fmt); }
     function cycleFormat(): void { root.cycleFormat(); }
+    function setOpacity(val: real): void { root.setOskOpacity(val); }
+    function cycleOpacity(): void { root.cycleOpacity(); }
+    function toggleFn(): void { root.fnActive = !root.fnActive; }
   }
 
   // Unified CRT Monolithic Grid Theme (Strictly Derived from Omarchy System Theme)
@@ -130,7 +147,7 @@ BarWidget {
   readonly property color keyBorder: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.18)
   readonly property color keyText: Color.foreground ? Color.foreground : "#e2e6d8"
   readonly property font monoFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
-  readonly property font keyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 14, bold: true })
+  readonly property font keyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
   readonly property font smallKeyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 9 })
   readonly property int fontSmall: Math.max(10, Style.font && Style.font.bodySmall ? Style.font.bodySmall : 10)
   readonly property int fontBody: Math.max(12, Style.font && Style.font.body ? Style.font.body : 12)
@@ -316,7 +333,7 @@ BarWidget {
     }
     padding: Style.space(3)
     contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(310) * Math.max(1.0, Style.fontScale)))
-    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(520) * Math.max(1.0, Style.fontScale)))
+    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(620) * Math.max(1.0, Style.fontScale)))
 
     Rectangle {
       anchors.fill: parent
@@ -497,6 +514,132 @@ BarWidget {
         // 1px Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
+        // Section: Opacity Slider
+        RowLayout {
+          Layout.fillWidth: true
+          Text {
+            text: "PRŮHLEDNOST / KRYTÍ:"
+            font.family: root.monoFont.family
+            font.pixelSize: 9
+            font.bold: true
+            color: "#9ca3af"
+          }
+          Item { Layout.fillWidth: true }
+          Text {
+            text: Math.round(root.oskOpacity * 100) + "%"
+            font.family: root.monoFont.family
+            font.pixelSize: 10
+            font.bold: true
+            color: root.accentColor
+          }
+        }
+
+        // Opacity Slider Track
+        Item {
+          id: opacitySlider
+          Layout.fillWidth: true
+          implicitHeight: 22
+
+          Rectangle {
+            id: opacTrack
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 6
+            radius: 3
+            color: root.keyBg
+            border.color: root.keyBorder
+            border.width: 1
+
+            Rectangle {
+              anchors.left: parent.left
+              anchors.top: parent.top
+              anchors.bottom: parent.bottom
+              radius: 3
+              width: Math.round(parent.width * Math.max(0, Math.min(1, root.oskOpacity)))
+              color: root.accentColor
+            }
+          }
+
+          // Cursor Thumb
+          Rectangle {
+            width: 10
+            height: 16
+            radius: 2
+            anchors.verticalCenter: opacTrack.verticalCenter
+            x: Math.max(0, Math.min(opacitySlider.width - width, Math.round(opacitySlider.width * Math.max(0, Math.min(1, root.oskOpacity)) - width / 2)))
+            color: opacSliderMouse.containsMouse || opacSliderMouse.pressed ? "#ffffff" : root.accentColor
+            border.color: root.tuiBorder
+            border.width: 1
+          }
+
+          MouseArea {
+            id: opacSliderMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+
+            function updatePos(mx) {
+              var r = Math.max(0.25, Math.min(1.0, mx / width))
+              var stepped = Math.round(r / 0.05) * 0.05
+              root.setOskOpacity(stepped)
+            }
+
+            onPressed: function(mouse) { updatePos(mouse.x) }
+            onPositionChanged: function(mouse) {
+              if (pressed) updatePos(mouse.x)
+            }
+            onWheel: function(wheel) {
+              var d = (wheel.angleDelta.y > 0) ? 0.05 : -0.05
+              root.setOskOpacity(root.oskOpacity + d)
+              wheel.accepted = true
+            }
+          }
+        }
+
+        // Quick Opacity Presets
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 4
+
+          Repeater {
+            model: [
+              { label: "40%", val: 0.40 },
+              { label: "60%", val: 0.60 },
+              { label: "80%", val: 0.80 },
+              { label: "100%", val: 1.00 }
+            ]
+
+            Rectangle {
+              Layout.fillWidth: true
+              implicitHeight: 20
+              radius: 3
+              color: (Math.abs(root.oskOpacity - modelData.val) < 0.04) ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.25) : (presetMouse.containsMouse ? root.keyHover : root.keyBg)
+              border.width: 1
+              border.color: (Math.abs(root.oskOpacity - modelData.val) < 0.04) ? root.accentColor : root.keyBorder
+
+              Text {
+                anchors.centerIn: parent
+                text: modelData.label
+                font.family: root.monoFont.family
+                font.pixelSize: 9
+                font.bold: (Math.abs(root.oskOpacity - modelData.val) < 0.04)
+                color: (Math.abs(root.oskOpacity - modelData.val) < 0.04) ? root.accentColor : root.keyText
+              }
+
+              MouseArea {
+                id: presetMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.setOskOpacity(modelData.val)
+              }
+            }
+          }
+        }
+
+        // 1px Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
         // Action: Toggle OSK
         Rectangle {
           Layout.fillWidth: true
@@ -571,7 +714,7 @@ BarWidget {
         border.width: 1
         border.color: root.accentColor
         radius: 6
-        opacity: 1.0
+        opacity: root.oskOpacity
 
         // Scalable Key Component
         component KeyBtn: Rectangle {
@@ -608,7 +751,7 @@ BarWidget {
               Layout.alignment: Qt.AlignVCenter
               text: kBtn.customIcon
               font.family: kBtn.customIconFont !== "" ? kBtn.customIconFont : root.monoFont.family
-              font.pixelSize: Math.max(11, Math.round(root.baseKeyFontSize * 1.1))
+              font.pixelSize: Math.max(12, Math.round(root.baseKeyFontSize * 1.1))
               color: isActive ? root.accentColor : kBtn.customColor
               verticalAlignment: Text.AlignVCenter
             }
@@ -638,7 +781,7 @@ BarWidget {
                   return textNormal;
                 }
                 font.family: root.keyFont.family
-                font.pixelSize: (textNormal.length > 3) ? Math.max(9, Math.round(root.baseKeyFontSize * 0.8)) : ((textNormal.length > 1) ? Math.max(10, Math.round(root.baseKeyFontSize * 0.9)) : root.baseKeyFontSize)
+                font.pixelSize: (textNormal.length > 3) ? Math.max(10, Math.round(root.baseKeyFontSize * 0.8)) : ((textNormal.length > 1) ? Math.max(11, Math.round(root.baseKeyFontSize * 0.9)) : root.baseKeyFontSize)
                 font.bold: true
                 color: isActive ? root.accentColor : kBtn.customColor
                 verticalAlignment: Text.AlignVCenter
@@ -676,6 +819,7 @@ BarWidget {
                 else if (kBtn.modifierName === "ctrl") root.ctrlActive = !root.ctrlActive;
                 else if (kBtn.modifierName === "super") root.superActive = !root.superActive;
                 else if (kBtn.modifierName === "alt") root.altActive = !root.altActive;
+                else if (kBtn.modifierName === "fn") root.fnActive = !root.fnActive;
                 else if (kBtn.modifierName === "layout") root.cycleLayout();
                 return;
               }
@@ -890,6 +1034,15 @@ BarWidget {
               color: root.accentColor
             }
 
+            Text {
+              visible: root.fnActive
+              text: "[FN ON]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.cyanColor
+            }
+
             // Interactive Header Spacer (Drag LMB to Move, RMB to Resize)
             Item {
               Layout.fillWidth: true
@@ -922,6 +1075,36 @@ BarWidget {
                   cardDragArea.endResize();
                   cardDragArea.endMove();
                 }
+              }
+            }
+
+            // Quick Opacity Badge (Cycle 100% -> 80% -> 60% -> 40%)
+            Rectangle {
+              implicitWidth: opacBadgeLabel.implicitWidth + 12
+              implicitHeight: 20
+              radius: 3
+              color: opacBadgeMouse.containsMouse ? root.keyHover : root.keyBg
+              border.width: 1
+              border.color: opacBadgeMouse.containsMouse ? root.accentColor : root.keyBorder
+
+              RowLayout {
+                anchors.centerIn: parent
+                spacing: 3
+                Text {
+                  id: opacBadgeLabel
+                  text: "◐ " + Math.round(root.oskOpacity * 100) + "%"
+                  font.family: root.monoFont.family
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: opacBadgeMouse.containsMouse ? root.accentColor : root.keyText
+                }
+              }
+
+              MouseArea {
+                id: opacBadgeMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.cycleOpacity()
               }
             }
 
@@ -1098,19 +1281,82 @@ BarWidget {
             Layout.fillHeight: true
             spacing: 4
 
-            KeyBtn { textNormal: root.currentLayout === "CS" ? ";" : "`"; textShift: root.currentLayout === "CS" ? "°" : "~" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "+" : "1"; textShift: root.currentLayout === "CS" ? "1" : "!" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "ě" : "2"; textShift: root.currentLayout === "CS" ? "2" : "@" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "š" : "3"; textShift: root.currentLayout === "CS" ? "3" : "#" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "č" : "4"; textShift: root.currentLayout === "CS" ? "4" : "$" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "ř" : "5"; textShift: root.currentLayout === "CS" ? "5" : "%" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "ž" : "6"; textShift: root.currentLayout === "CS" ? "6" : "^" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "ý" : "7"; textShift: root.currentLayout === "CS" ? "7" : "&" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "á" : "8"; textShift: root.currentLayout === "CS" ? "8" : "*" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "í" : "9"; textShift: root.currentLayout === "CS" ? "9" : "(" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "é" : "0"; textShift: root.currentLayout === "CS" ? "0" : ")" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "=" : "-"; textShift: root.currentLayout === "CS" ? "%" : "_" }
-            KeyBtn { textNormal: root.currentLayout === "CS" ? "´" : "="; textShift: root.currentLayout === "CS" ? "ˇ" : "+" }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "~" : (root.currentLayout === "CS" ? ";" : "`")
+              textShift: (!root.hasFRow && root.fnActive) ? "`" : (root.currentLayout === "CS" ? "°" : "~")
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F1" : (root.currentLayout === "CS" ? "+" : "1")
+              textShift: (!root.hasFRow && root.fnActive) ? "F1" : (root.currentLayout === "CS" ? "1" : "!")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F1" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F2" : (root.currentLayout === "CS" ? "ě" : "2")
+              textShift: (!root.hasFRow && root.fnActive) ? "F2" : (root.currentLayout === "CS" ? "2" : "@")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F2" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F3" : (root.currentLayout === "CS" ? "š" : "3")
+              textShift: (!root.hasFRow && root.fnActive) ? "F3" : (root.currentLayout === "CS" ? "3" : "#")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F3" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F4" : (root.currentLayout === "CS" ? "č" : "4")
+              textShift: (!root.hasFRow && root.fnActive) ? "F4" : (root.currentLayout === "CS" ? "4" : "$")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F4" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F5" : (root.currentLayout === "CS" ? "ř" : "5")
+              textShift: (!root.hasFRow && root.fnActive) ? "F5" : (root.currentLayout === "CS" ? "5" : "%")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F5" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F6" : (root.currentLayout === "CS" ? "ž" : "6")
+              textShift: (!root.hasFRow && root.fnActive) ? "F6" : (root.currentLayout === "CS" ? "6" : "^")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F6" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F7" : (root.currentLayout === "CS" ? "ý" : "7")
+              textShift: (!root.hasFRow && root.fnActive) ? "F7" : (root.currentLayout === "CS" ? "7" : "&")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F7" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F8" : (root.currentLayout === "CS" ? "á" : "8")
+              textShift: (!root.hasFRow && root.fnActive) ? "F8" : (root.currentLayout === "CS" ? "8" : "*")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F8" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F9" : (root.currentLayout === "CS" ? "í" : "9")
+              textShift: (!root.hasFRow && root.fnActive) ? "F9" : (root.currentLayout === "CS" ? "9" : "(")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F9" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F10" : (root.currentLayout === "CS" ? "é" : "0")
+              textShift: (!root.hasFRow && root.fnActive) ? "F10" : (root.currentLayout === "CS" ? "0" : ")")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F10" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F11" : (root.currentLayout === "CS" ? "=" : "-")
+              textShift: (!root.hasFRow && root.fnActive) ? "F11" : (root.currentLayout === "CS" ? "%" : "_")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F11" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
+            KeyBtn {
+              textNormal: (!root.hasFRow && root.fnActive) ? "F12" : (root.currentLayout === "CS" ? "´" : "=")
+              textShift: (!root.hasFRow && root.fnActive) ? "F12" : (root.currentLayout === "CS" ? "ˇ" : "+")
+              keyCommand: (!root.hasFRow && root.fnActive) ? "F12" : ""
+              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
+            }
             KeyBtn {
               textNormal: root.isApple ? "delete" : "⌫ BKSP"
               keyCommand: "BackSpace"
@@ -1292,7 +1538,15 @@ BarWidget {
             spacing: 4
 
             // Apple Magic Keyboard Modifiers
-            KeyBtn { visible: root.isApple; textNormal: "fn"; customWidth: 50; customColor: root.cyanColor }
+            KeyBtn {
+              visible: root.isApple
+              textNormal: "fn"
+              customWidth: 50
+              isModifier: true
+              modifierName: "fn"
+              isActive: root.fnActive
+              customColor: root.fnActive ? root.cyanColor : root.keyText
+            }
             KeyBtn { visible: root.isApple; textNormal: "⌃ control"; customWidth: 65; isModifier: true; modifierName: "ctrl"; isActive: root.ctrlActive }
             KeyBtn { visible: root.isApple; textNormal: "⌥ option"; customWidth: 65; isModifier: true; modifierName: "alt"; isActive: root.altActive }
             KeyBtn { visible: root.isApple; textNormal: "⌘ command"; customWidth: 78; isModifier: true; modifierName: "super"; isActive: root.superActive }
@@ -1351,14 +1605,13 @@ BarWidget {
               isActive: root.altActive
             }
             KeyBtn {
-              visible: !root.isApple && (root.currentFormat === "60%" || root.hasNavCluster)
-              textNormal: "Super"
-              customIcon: "\ue900"
-              customIconFont: "omarchy"
-              customWidth: 65
+              visible: !root.isApple
+              textNormal: "Fn"
+              customWidth: (root.currentFormat === "60%" || root.hasNavCluster) ? 60 : 50
               isModifier: true
-              modifierName: "super"
-              isActive: root.superActive
+              modifierName: "fn"
+              isActive: root.fnActive
+              customColor: root.fnActive ? root.cyanColor : root.keyText
             }
             KeyBtn {
               visible: !root.isApple
