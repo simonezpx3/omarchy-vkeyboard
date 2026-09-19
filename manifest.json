@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "simonez.vkeyboard",
+  "name": "Virtual Keyboard & Layout",
+  "version": "1.0.0",
+  "author": "simonez & Arci",
+  "license": "MIT",
+  "description": "On-screen virtual keyboard with instant wtype typing, CS/ENG layout switcher, and Unified CRT Monolithic Grid styling for Omarchy.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Virtual Keyboard",
+    "description": "Left click toggles on-screen virtual keyboard, right click selects CS/ENG layout.",
+    "category": "System",
+    "aliases": ["vkeyboard", "osk", "keyboard-layout", "virtual-keyboard"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showBadge": true
+    },
+    "schema": [
+      {
+        "key": "showBadge",
+        "type": "boolean",
+        "label": "Show Layout Badge",
+        "description": "Show CS/EN text badge next to keyboard icon in bar.",
+        "defaultValue": true
+      }
+    ]
+  }
+}
