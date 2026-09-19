@@ -22,6 +22,7 @@ BarWidget {
   property bool capsActive: false
   property bool ctrlActive: false
   property bool altActive: false
+  property bool altGrActive: false
   property bool superActive: false
   property bool fnActive: false
 
@@ -132,6 +133,7 @@ BarWidget {
     function setOpacity(val: real): void { root.setOskOpacity(val); }
     function cycleOpacity(): void { root.cycleOpacity(); }
     function toggleFn(): void { root.fnActive = !root.fnActive; }
+    function toggleAltGr(): void { root.altGrActive = !root.altGrActive; }
   }
 
   // Unified CRT Monolithic Grid Theme (Strictly Derived from Omarchy System Theme)
@@ -158,6 +160,7 @@ BarWidget {
     var mods = [];
     if (root.ctrlActive) mods.push("ctrl");
     if (root.altActive) mods.push("alt");
+    if (root.altGrActive) mods.push("altgr");
     if (root.superActive) mods.push("logo");
     
     // Construct wtype invocation
@@ -175,6 +178,7 @@ BarWidget {
     if (root.shiftActive) root.shiftActive = false;
     if (root.ctrlActive) root.ctrlActive = false;
     if (root.altActive) root.altActive = false;
+    if (root.altGrActive) root.altGrActive = false;
     if (root.superActive) root.superActive = false;
   }
 
@@ -183,6 +187,7 @@ BarWidget {
     var mods = [];
     if (root.ctrlActive) mods.push("ctrl");
     if (root.altActive) mods.push("alt");
+    if (root.altGrActive) mods.push("altgr");
     if (root.superActive) mods.push("logo");
     if (root.shiftActive) mods.push("shift");
 
@@ -199,6 +204,7 @@ BarWidget {
     if (root.shiftActive) root.shiftActive = false;
     if (root.ctrlActive) root.ctrlActive = false;
     if (root.altActive) root.altActive = false;
+    if (root.altGrActive) root.altGrActive = false;
     if (root.superActive) root.superActive = false;
   }
 
@@ -819,6 +825,7 @@ BarWidget {
                 else if (kBtn.modifierName === "ctrl") root.ctrlActive = !root.ctrlActive;
                 else if (kBtn.modifierName === "super") root.superActive = !root.superActive;
                 else if (kBtn.modifierName === "alt") root.altActive = !root.altActive;
+                else if (kBtn.modifierName === "altgr") root.altGrActive = !root.altGrActive;
                 else if (kBtn.modifierName === "fn") root.fnActive = !root.fnActive;
                 else if (kBtn.modifierName === "layout") root.cycleLayout();
                 return;
@@ -1041,6 +1048,15 @@ BarWidget {
               font.pixelSize: 10
               font.bold: true
               color: root.cyanColor
+            }
+
+            Text {
+              visible: root.altGrActive
+              text: "[ALTGR ON]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
             }
 
             // Interactive Header Spacer (Drag LMB to Move, RMB to Resize)
@@ -1595,14 +1611,15 @@ BarWidget {
               customColor: "#9ca3af"
             }
 
-            // Right Modifiers
+            // Right Modifiers (AltGr for European/Czech special characters)
             KeyBtn {
               visible: !root.isApple
-              textNormal: "Alt"
+              textNormal: "AltGr"
               customWidth: 55
               isModifier: true
-              modifierName: "alt"
-              isActive: root.altActive
+              modifierName: "altgr"
+              isActive: root.altGrActive
+              customColor: root.altGrActive ? root.accentColor : root.keyText
             }
             KeyBtn {
               visible: !root.isApple
