@@ -42,8 +42,8 @@ An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `w
 ### 󰌌 Bar Indicator & Popout Menu
 * **Left Click:** Toggles the full On-Screen Virtual Keyboard on/off.
 * **Right Click:** Opens the CRT Quick Settings Panel:
-  * **Active Layout Selector:** Dynamically detects all configured XKB layouts from Hyprland with live indicators and switching.
-  * **6 Hardware Formats:** 60%, 65%, 75%, 80% (TKL), Full Size, and macOS Layout.
+  * **Dynamic Multi-Layout Detection:** Automatically queries and synchronizes with the system's configured Hyprland XKB layouts (`us`, `cz`, `sk`, `de`, `fr`, `es`, `it`, `pl`, `ua`, `pt`, `nl`, `se`, etc.). Only user-configured system layouts are displayed in the quick-switcher menu, with a clean `English (US)` fallback for unconfigured environments.
+  * **6 Hardware Formats:** 60%, 65%, 75%, 80% (TKL), Full Size (with full Numpad), and macOS Layout.
   * **Opacity / Transparency Slider:** Smooth CRT slider (`25%–100%`) with instant live preview.
   * **System XKB & Hardware Profile:** Live audit of system layout options, AltGr Level 3, and modifier toggle settings.
 
@@ -68,7 +68,7 @@ An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `w
 ### Navigation Keys & Double-Shift Protection
 * Modernized keysyms: `Page_Up` and `Page_Down` (with fallback for legacy `Prior` / `Next`).
 * Pre-sleep delay (`-s 10`) ensuring reliable delivery across Wayland clients.
-* Clean text typing: `sendChar()` avoids redundant double-shift modifiers on text characters (`A`, `!`, `1`), preserving exact diacritics and symbols on both US and Czech QWERTY layouts.
+* Clean text typing: `sendChar()` avoids redundant double-shift modifiers on text characters (`A`, `!`, `1`), preserving exact diacritics and symbols across national layouts.
 * Dedicated system hardware keys: `PrtSc` (direct screenshot/OCR capture), `Calc` (`omacalc`), and Volume/Mute controls (`wpctl`).
 
 ---
@@ -93,9 +93,9 @@ cd ~/Projects/VirtualKeyboard
 
 ```bash
 vkeyboard-ctl status              # Show active layout & system configuration
-vkeyboard-ctl switch cs          # Switch layout to Czech (QWERTY)
 vkeyboard-ctl switch en          # Switch layout to English (US)
-vkeyboard-ctl toggle             # Toggle between configured layouts
+vkeyboard-ctl switch cs          # Switch layout to Czech (if configured)
+vkeyboard-ctl toggle             # Toggle between configured system layouts
 vkeyboard-ctl dispatch space super    # Dispatch Super+Space system shortcut
 vkeyboard-ctl key Page_Up shift       # Send Shift+Page_Up
 vkeyboard-ctl text "Hello World"      # Type arbitrary text string

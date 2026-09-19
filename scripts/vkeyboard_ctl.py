@@ -153,11 +153,10 @@ def get_layout_info():
             slot_id = (0x732641 ^ ((idx + 1) * 31)) & 0xFFFFFF
             configured.append({"code": code, "index": idx, "tag": ltag, "name": name, "slot": slot_id})
 
-        # Fallback if no layouts configured in XKB: ensure at least EN and CS
+        # Fallback if no layouts configured in XKB: default to standard English (US)
         if not configured:
             configured = [
-                {"code": "EN", "index": 0, "tag": "us", "name": "English (US)", "slot": (0x732641 ^ 31) & 0xFFFFFF},
-                {"code": "CS", "index": 1, "tag": "cz", "name": "Czech (QWERTY)", "slot": (0x732641 ^ 62) & 0xFFFFFF}
+                {"code": "EN", "index": 0, "tag": "us", "name": "English (US)", "slot": (0x732641 ^ 31) & 0xFFFFFF}
             ]
 
         # Look for active primary keyboard

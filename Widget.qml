@@ -19,8 +19,7 @@ BarWidget {
   property int layoutIndex: 0
   property string layoutFullName: "English (US)"
   property var availableLayouts: [
-    { "code": "EN", "index": 0, "name": "English (US)" },
-    { "code": "CS", "index": 1, "name": "Czech (QWERTY)" }
+    { "code": "EN", "index": 0, "name": "English (US)" }
   ]
   property bool oskOpen: false
 
