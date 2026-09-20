@@ -3,7 +3,7 @@
 An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `wtype` keystroke injection, system shortcut dispatching, dynamic multi-language XKB layout switching, and **Unified CRT Monolithic Grid** styling for Omarchy Linux & Hyprland.
 
 **Authors:** `simonez & Arci`  
-**Version:** `1.5.9`  
+**Version:** `1.6.0`  
 **License:** MIT  
 
 ![Virtual Keyboard Demo](assets/demo.gif)
@@ -41,11 +41,11 @@ An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `w
 
 ### 󰌌 Bar Indicator & Popout Menu
 * **Left Click:** Toggles the full On-Screen Virtual Keyboard on/off.
-* **Right Click:** Opens the CRT Quick Settings Panel:
+* **Right Click:** Opens the Quick Settings Panel (aligned with official Omarchy panel architecture):
   * **Dynamic Multi-Layout Detection:** Automatically queries and synchronizes with the system's configured Hyprland XKB layouts (`us`, `cz`, `sk`, `de`, `fr`, `es`, `it`, `pl`, `ua`, `pt`, `nl`, `se`, etc.). Only user-configured system layouts are displayed in the quick-switcher menu, with a clean `English (US)` fallback for unconfigured environments.
   * **6 Hardware Formats:** 60%, 65%, 75%, 80% (TKL), Full Size (with full Numpad), and macOS Layout.
-  * **Opacity / Transparency Slider:** Smooth CRT slider (`25%–100%`) with instant live preview.
-  * **System XKB & Hardware Profile:** Live audit of system layout options, AltGr Level 3, and modifier toggle settings.
+  * **Opacity / Transparency Slider:** Smooth slider (`25%–100%`) with instant live preview.
+  * **Header Visibility Toggle:** Option to hide the top header bar for an ultra-clean, minimal borderless layout.
 
 ### System Shortcut Dispatcher (`SUPER` combinations)
 * Wayland normally isolates virtual keyboards from compositor-level root keybindings for security.
