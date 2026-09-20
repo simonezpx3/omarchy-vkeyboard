@@ -208,7 +208,7 @@ BarWidget {
   readonly property color keyHover: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.16)
   readonly property color keyPressed: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.28)
   readonly property color keyBorder: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.18)
-  readonly property color keyText: Color.foreground ? Color.foreground : "#e2e6d8"
+  readonly property color keyText: "#ffffff"
   readonly property font monoFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
   readonly property font keyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
   readonly property font smallKeyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 9 })
@@ -963,7 +963,7 @@ BarWidget {
                 text: textShift
                 font.family: root.monoFont.family
                 font.pixelSize: Math.max(6, Math.round(root.baseKeyFontSize * 0.65))
-                color: root.shiftActive ? root.accentColor : "#9ca3af"
+                color: root.shiftActive ? root.accentColor : "#ffffff"
                 elide: Text.ElideNone
               }
 
@@ -1453,9 +1453,9 @@ BarWidget {
               }
             }
 
-            // Reset Window Size & Position Button (Icon only)
+            // Reset Window Size & Position Button (Spinning refresh icon)
             Rectangle {
-              implicitWidth: 24
+              implicitWidth: 26
               implicitHeight: 20
               Layout.preferredHeight: 20
               Layout.maximumHeight: 20
@@ -1466,76 +1466,33 @@ BarWidget {
               border.color: root.keyBorder
 
               Text {
+                id: resetIcon
                 anchors.centerIn: parent
-                text: "↺"
+                text: "󰑐"
                 font.family: root.monoFont.family
                 font.pixelSize: 13
                 font.bold: true
-                color: resetMouse.containsMouse ? root.accentColor : "#9ca3af"
+                color: resetMouse.containsMouse ? root.accentColor : "#ffffff"
+                transformOrigin: Item.Center
+
+                RotationAnimator {
+                  id: resetSpinner
+                  target: resetIcon
+                  from: 0
+                  to: 360
+                  duration: 600
+                  running: false
+                }
               }
 
               MouseArea {
                 id: resetMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.resetOskPosition()
-              }
-            }
-
-            // Quick ESC Key
-            Rectangle {
-              implicitWidth: 42
-              implicitHeight: 20
-              Layout.preferredHeight: 20
-              Layout.maximumHeight: 20
-              Layout.alignment: Qt.AlignVCenter
-              radius: 3
-              color: escMouse.containsMouse ? root.keyHover : root.keyBg
-              border.width: 1
-              border.color: root.keyBorder
-
-              Text {
-                anchors.centerIn: parent
-                text: "ESC"
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                color: root.keyText
-              }
-
-              MouseArea {
-                id: escMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.sendKey("Escape")
-              }
-            }
-
-            // Close Button [X]
-            Rectangle {
-              implicitWidth: 26
-              implicitHeight: 20
-              Layout.preferredHeight: 20
-              Layout.maximumHeight: 20
-              Layout.alignment: Qt.AlignVCenter
-              radius: 3
-              color: closeMouse.containsMouse ? "#ef4444" : Qt.rgba(1, 1, 1, 0.05)
-              border.width: 1
-              border.color: closeMouse.containsMouse ? "#ef4444" : root.tuiBorder
-
-              Text {
-                anchors.centerIn: parent
-                text: "×"
-                font.family: root.monoFont.family
-                font.pixelSize: 14
-                font.bold: true
-                color: closeMouse.containsMouse ? "#ffffff" : "#9ca3af"
-              }
-
-              MouseArea {
-                id: closeMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.oskOpen = false
+                onClicked: {
+                  resetSpinner.restart();
+                  root.resetOskPosition();
+                }
               }
             }
           }
@@ -1559,7 +1516,7 @@ BarWidget {
             Layout.fillHeight: true
             spacing: 4
 
-            KeyBtn { textNormal: root.isMac ? "esc" : "ESC"; keyCommand: "Escape"; customWidth: root.isMac ? 65 : 48; customColor: root.cyanColor }
+            KeyBtn { textNormal: root.isMac ? "esc" : "ESC"; keyCommand: "Escape"; customWidth: root.isMac ? 65 : 48 }
 
             KeyBtn { textNormal: "F1"; keyCommand: "F1" }
             KeyBtn { textNormal: "F2"; keyCommand: "F2" }
@@ -1581,10 +1538,10 @@ BarWidget {
             KeyBtn { textNormal: "F12"; keyCommand: "F12" }
 
             // macOS Layout Right Lock
-            KeyBtn { visible: root.isMac; textNormal: "⚲"; keyCommand: "Escape"; customWidth: 46; customColor: root.accentColor }
+            KeyBtn { visible: root.isMac; textNormal: "⚲"; keyCommand: "Escape"; customWidth: 46 }
 
             // 75% Right Del
-            KeyBtn { visible: root.is75; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
+            KeyBtn { visible: root.is75; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46 }
 
             // 80% TKL & Full Size Right Cluster (PrtSc, ScrLk, Pause)
             KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
@@ -1616,83 +1573,70 @@ BarWidget {
               textNormal: (!root.hasFRow && root.fnActive) ? "F1" : (root.currentLayout === "CS" ? "+" : "1")
               textShift: (!root.hasFRow && root.fnActive) ? "F1" : (root.currentLayout === "CS" ? "1" : "!")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F1" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F2" : (root.currentLayout === "CS" ? "ě" : "2")
               textShift: (!root.hasFRow && root.fnActive) ? "F2" : (root.currentLayout === "CS" ? "2" : "@")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F2" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F3" : (root.currentLayout === "CS" ? "š" : "3")
               textShift: (!root.hasFRow && root.fnActive) ? "F3" : (root.currentLayout === "CS" ? "3" : "#")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F3" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F4" : (root.currentLayout === "CS" ? "č" : "4")
               textShift: (!root.hasFRow && root.fnActive) ? "F4" : (root.currentLayout === "CS" ? "4" : "$")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F4" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F5" : (root.currentLayout === "CS" ? "ř" : "5")
               textShift: (!root.hasFRow && root.fnActive) ? "F5" : (root.currentLayout === "CS" ? "5" : "%")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F5" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F6" : (root.currentLayout === "CS" ? "ž" : "6")
               textShift: (!root.hasFRow && root.fnActive) ? "F6" : (root.currentLayout === "CS" ? "6" : "^")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F6" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F7" : (root.currentLayout === "CS" ? "ý" : "7")
               textShift: (!root.hasFRow && root.fnActive) ? "F7" : (root.currentLayout === "CS" ? "7" : "&")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F7" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F8" : (root.currentLayout === "CS" ? "á" : "8")
               textShift: (!root.hasFRow && root.fnActive) ? "F8" : (root.currentLayout === "CS" ? "8" : "*")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F8" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F9" : (root.currentLayout === "CS" ? "í" : "9")
               textShift: (!root.hasFRow && root.fnActive) ? "F9" : (root.currentLayout === "CS" ? "9" : "(")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F9" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F10" : (root.currentLayout === "CS" ? "é" : "0")
               textShift: (!root.hasFRow && root.fnActive) ? "F10" : (root.currentLayout === "CS" ? "0" : ")")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F10" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F11" : (root.currentLayout === "CS" ? "=" : "-")
               textShift: (!root.hasFRow && root.fnActive) ? "F11" : (root.currentLayout === "CS" ? "%" : "_")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F11" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: (!root.hasFRow && root.fnActive) ? "F12" : (root.currentLayout === "CS" ? "´" : "=")
               textShift: (!root.hasFRow && root.fnActive) ? "F12" : (root.currentLayout === "CS" ? "ˇ" : "+")
               keyCommand: (!root.hasFRow && root.fnActive) ? "F12" : ""
-              customColor: (!root.hasFRow && root.fnActive) ? root.cyanColor : root.keyText
             }
             KeyBtn {
               textNormal: root.isMac ? "delete" : "⌫ BKSP"
               keyCommand: "BackSpace"
               customWidth: root.isMac ? 82 : 88
-              customColor: root.warnColor
             }
 
             // Extensions: 65% / 75%
-            KeyBtn { visible: root.is65; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
+            KeyBtn { visible: root.is65; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46 }
             KeyBtn { visible: root.is75; textNormal: "Home"; keyCommand: "Home"; customWidth: 46 }
 
             // Extensions: 80% TKL & Full Size
@@ -1717,7 +1661,7 @@ BarWidget {
             Layout.fillHeight: true
             spacing: 4
 
-            KeyBtn { textNormal: root.isMac ? "tab" : "⇥ TAB"; keyCommand: "Tab"; customWidth: root.isMac ? 65 : 70; customColor: root.cyanColor }
+            KeyBtn { textNormal: root.isMac ? "tab" : "⇥ TAB"; keyCommand: "Tab"; customWidth: root.isMac ? 65 : 70 }
             KeyBtn { textNormal: "q" }
             KeyBtn { textNormal: "w" }
             KeyBtn { textNormal: "e" }
@@ -1738,7 +1682,7 @@ BarWidget {
 
             // Extensions: 80% TKL & Full Size
             KeySpacer { visible: root.hasNavCluster; customWidth: 12 }
-            KeyBtn { visible: root.hasNavCluster; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46; customColor: root.warnColor }
+            KeyBtn { visible: root.hasNavCluster; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "End"; keyCommand: "End"; customWidth: 46 }
             KeyBtn { visible: root.hasNavCluster; textNormal: "PgDn"; keyCommand: "Page_Down"; customWidth: 46 }
 
@@ -1764,7 +1708,6 @@ BarWidget {
               isModifier: true
               modifierName: "caps"
               isActive: root.capsActive
-              customColor: root.capsActive ? root.cyanColor : root.keyText
             }
             KeyBtn { textNormal: "a" }
             KeyBtn { textNormal: "s" }
@@ -1781,7 +1724,6 @@ BarWidget {
               textNormal: root.isMac ? "return" : "↵ ENTER"
               keyCommand: "Return"
               customWidth: root.isMac ? 90 : 98
-              customColor: "#ffffff"
               customBg: Qt.rgba(52/255, 211/255, 153/255, 0.22)
             }
 
@@ -1814,7 +1756,6 @@ BarWidget {
               isModifier: true
               modifierName: "shift_l"
               isActive: root.shiftLActive
-              customColor: root.shiftLActive ? root.accentColor : root.keyText
             }
             KeyBtn { textNormal: "z" }
             KeyBtn { textNormal: "x" }
@@ -1832,7 +1773,6 @@ BarWidget {
               isModifier: true
               modifierName: "shift_r"
               isActive: root.shiftRActive
-              customColor: root.shiftRActive ? root.accentColor : root.keyText
             }
 
             // Extensions: 65% / 75%
@@ -1853,7 +1793,7 @@ BarWidget {
             KeyBtn { visible: root.hasNumpad; textNormal: "1"; keyCommand: "KP_1"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "2"; keyCommand: "KP_2"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "3"; keyCommand: "KP_3"; customWidth: 44 }
-            KeyBtn { visible: root.hasNumpad; textNormal: "↵"; keyCommand: "KP_Enter"; customWidth: 44; customColor: "#ffffff"; customBg: Qt.rgba(52/255, 211/255, 153/255, 0.22) }
+            KeyBtn { visible: root.hasNumpad; textNormal: "↵"; keyCommand: "KP_Enter"; customWidth: 44; customBg: Qt.rgba(52/255, 211/255, 153/255, 0.22) }
           }
 
           // ----------------------------------------------------
@@ -1872,7 +1812,6 @@ BarWidget {
               isModifier: true
               modifierName: "fn"
               isActive: root.fnActive
-              customColor: root.fnActive ? root.cyanColor : root.keyText
             }
             KeyBtn {
               visible: root.isMac
@@ -1881,7 +1820,6 @@ BarWidget {
               isModifier: true
               modifierName: "ctrl_l"
               isActive: root.ctrlLActive
-              customColor: root.ctrlLActive ? root.accentColor : root.keyText
             }
             KeyBtn {
               visible: root.isMac
@@ -1890,10 +1828,9 @@ BarWidget {
               isModifier: true
               modifierName: "alt_l"
               isActive: root.altLActive
-              customColor: root.altLActive ? root.accentColor : root.keyText
             }
             KeyBtn { visible: root.isMac; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
-            KeyBtn { visible: root.isMac; textNormal: "SPACE"; keyCommand: "space"; Layout.fillWidth: true; customColor: "#9ca3af" }
+            KeyBtn { visible: root.isMac; textNormal: "SPACE"; keyCommand: "space"; Layout.fillWidth: true }
             KeyBtn { visible: root.isMac; textNormal: "⌘ command"; customWidth: 75; isModifier: true; modifierName: "super"; isActive: root.superActive }
             KeyBtn {
               visible: root.isMac
@@ -1902,9 +1839,8 @@ BarWidget {
               isModifier: true
               modifierName: "alt_r"
               isActive: root.altRActive
-              customColor: root.altRActive ? root.accentColor : root.keyText
             }
-            KeyBtn { visible: root.isMac; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout"; customColor: root.warnColor; customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12) }
+            KeyBtn { visible: root.isMac; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout"; customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12) }
             KeyBtn { visible: root.isMac; textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
             KeyBtn { visible: root.isMac; textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
             KeyBtn { visible: root.isMac; textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
@@ -1917,7 +1853,6 @@ BarWidget {
               isModifier: true
               modifierName: root.sysSwapLaltLctl ? "alt_l" : "ctrl_l"
               isActive: root.sysSwapLaltLctl ? root.altLActive : root.ctrlLActive
-              customColor: (root.sysSwapLaltLctl ? root.altLActive : root.ctrlLActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
               visible: !root.isMac
@@ -1936,7 +1871,6 @@ BarWidget {
               isModifier: true
               modifierName: root.sysSwapLaltLctl ? "ctrl_l" : "alt_l"
               isActive: root.sysSwapLaltLctl ? root.ctrlLActive : root.altLActive
-              customColor: (root.sysSwapLaltLctl ? root.ctrlLActive : root.altLActive) ? root.accentColor : root.keyText
             }
 
             // Spacebar
@@ -1945,7 +1879,6 @@ BarWidget {
               textNormal: "SPACE"
               keyCommand: "space"
               Layout.fillWidth: true
-              customColor: "#9ca3af"
             }
 
             // Right Modifiers (Alt for European/Czech special characters, RAlt for US)
@@ -1956,7 +1889,6 @@ BarWidget {
               isModifier: true
               modifierName: root.sysHasAltGr ? "altgr" : "alt_r"
               isActive: root.sysHasAltGr ? root.altGrActive : root.altRActive
-              customColor: (root.sysHasAltGr ? root.altGrActive : root.altRActive) ? root.accentColor : root.keyText
             }
             KeyBtn {
               visible: !root.isMac && (!root.hasFRow)
@@ -1965,7 +1897,6 @@ BarWidget {
               isModifier: true
               modifierName: "fn"
               isActive: root.fnActive
-              customColor: root.fnActive ? root.cyanColor : root.keyText
             }
             KeyBtn {
               visible: !root.isMac
@@ -1973,7 +1904,6 @@ BarWidget {
               customWidth: 75
               isModifier: true
               modifierName: "layout"
-              customColor: root.warnColor
               customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12)
             }
             KeyBtn {
@@ -1983,7 +1913,6 @@ BarWidget {
               isModifier: true
               modifierName: root.sysRctrlIsCompose ? "compose" : "ctrl_r"
               isActive: root.ctrlRActive
-              customColor: root.ctrlRActive ? root.accentColor : root.keyText
             }
 
             // Arrow Keys for 65% and 75%
