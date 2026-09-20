@@ -2072,7 +2072,7 @@ BarWidget {
               modifierName: "alt_r"
               isActive: root.altRActive
             }
-            KeyBtn { visible: root.isMac; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout"; customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12) }
+            KeyBtn { visible: root.isMac; textNormal: "󰌌 " + root.currentLayout; customWidth: 65; isModifier: true; modifierName: "layout" }
             KeyBtn { visible: root.isMac; textNormal: "◄"; keyCommand: "Left"; customWidth: 42 }
             KeyBtn { visible: root.isMac; textNormal: "▼"; keyCommand: "Down"; customWidth: 42 }
             KeyBtn { visible: root.isMac; textNormal: "►"; keyCommand: "Right"; customWidth: 42 }
@@ -2136,7 +2136,6 @@ BarWidget {
               customWidth: 75
               isModifier: true
               modifierName: "layout"
-              customBg: Qt.rgba(251/255, 191/255, 36/255, 0.12)
             }
             KeyBtn {
               visible: !root.isMac && (root.currentFormat === "60%" || root.hasNavCluster || root.is75)
