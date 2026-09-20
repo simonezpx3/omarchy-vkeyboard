@@ -1228,11 +1228,11 @@ BarWidget {
             spacing: 6
 
             Text {
-              visible: root.oskWidth >= 760
-              text: "⠿"
-              font.family: root.monoFont.family
+              text: "\ue900"
+              font.family: "omarchy"
               font.pixelSize: 12
               color: root.accentColor
+              Layout.alignment: Qt.AlignVCenter
             }
 
             Text {
