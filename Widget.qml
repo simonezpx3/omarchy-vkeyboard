@@ -141,7 +141,7 @@ BarWidget {
   function resetOskPosition(): void {
     var defW = getFormatDefaultWidth(root.currentFormat);
     var defH = getFormatDefaultHeight(root.currentFormat);
-    root.oskWidth = Math.min(defW, oskWindow ? oskWindow.width - 32 : defW);
+    root.oskWidth = Math.min(defW, (oskWindow && oskWindow.width > 320) ? oskWindow.width - 32 : defW);
     root.oskHeight = defH;
     if (oskWindow && oskWindow.width > 0) {
       root.oskX = Math.round((oskWindow.width - root.oskWidth) / 2);
