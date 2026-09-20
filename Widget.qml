@@ -225,6 +225,11 @@ BarWidget {
   readonly property int fontSmall: Math.max(10, Style.font && Style.font.bodySmall ? Style.font.bodySmall : 10)
   readonly property int fontBody: Math.max(12, Style.font && Style.font.body ? Style.font.body : 12)
 
+  FontLoader {
+    id: omarchyBrandFont
+    source: Qt.resolvedUrl("assets/omarchy-font.ttf")
+  }
+
   // Combination Checker for System XKB Shortcuts (e.g. Alt+Shift, Ctrl+Shift, Both Shifts)
   function checkModifierCombos(): void {
     if (root.sysShiftsToggle && root.shiftLActive && root.shiftRActive) {
@@ -1502,11 +1507,11 @@ BarWidget {
             }
 
             Text {
-              text: root.oskWidth < 800 ? "KEYBOARD" : (root.oskWidth < 960 ? "VIRTUAL KEYBOARD" : "VIRTUAL KEYBOARD // ON-SCREEN")
-              font.family: root.monoFont.family
-              font.pixelSize: 11
-              font.bold: true
+              text: "Omarchy"
+              font.family: (omarchyBrandFont.name && omarchyBrandFont.name.length > 0) ? omarchyBrandFont.name : "Omarchy Font"
+              font.pixelSize: 13
               color: root.keyText
+              Layout.alignment: Qt.AlignVCenter
             }
 
             Text {
