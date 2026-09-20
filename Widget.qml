@@ -59,6 +59,7 @@ BarWidget {
   property real oskX: -1
   property real oskY: -1
   property real oskOpacity: setting("oskOpacity", 1.0)
+  property bool hideHeader: setting("hideHeader", false)
   property bool isResizingOsk: false
   property bool isMovingOsk: false
 
@@ -1013,7 +1014,59 @@ BarWidget {
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
         // ===================================================================
-        // 6. QUICK ACTIONS ROW
+        // 6. TOGGLE KEYBOARD HEADER
+        // ===================================================================
+        RowLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 6
+
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 26
+            color: toggleHeaderMouse.containsMouse ? root.keyHover : (root.hideHeader ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.12) : Qt.rgba(1, 1, 1, 0.04))
+            radius: 2
+            border.width: 1
+            border.color: root.hideHeader ? root.accentColor : root.keyBorder
+
+            RowLayout {
+              anchors.centerIn: parent
+              spacing: 6
+
+              Text {
+                text: root.hideHeader ? "[×]" : "[ ]"
+                font.family: root.monoFont.family
+                font.pixelSize: 11
+                font.bold: true
+                color: root.hideHeader ? root.accentColor : "#9ca3af"
+              }
+
+              Text {
+                text: "HIDE KEYBOARD HEADER"
+                font.family: root.monoFont.family
+                font.pixelSize: 10
+                font.bold: true
+                color: root.hideHeader ? root.accentColor : root.keyText
+              }
+            }
+
+            MouseArea {
+              id: toggleHeaderMouse
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.hideHeader = !root.hideHeader;
+              }
+            }
+          }
+        }
+
+        // 1px Horizontal Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // ===================================================================
+        // 7. QUICK ACTIONS ROW
         // ===================================================================
         RowLayout {
           Layout.fillWidth: true
@@ -1098,7 +1151,7 @@ BarWidget {
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
         // ===================================================================
-        // 7. INTEGRATED CRT FOOTER
+        // 8. INTEGRATED CRT FOOTER
         // ===================================================================
         RowLayout {
           Layout.fillWidth: true
@@ -1491,11 +1544,12 @@ BarWidget {
           // ----------------------------------------------------
           RowLayout {
             id: headerRow
+            visible: !root.hideHeader
             Layout.fillWidth: true
             Layout.fillHeight: false
-            Layout.minimumHeight: 24
-            Layout.preferredHeight: 24
-            Layout.maximumHeight: 24
+            Layout.minimumHeight: root.hideHeader ? 0 : 24
+            Layout.preferredHeight: root.hideHeader ? 0 : 24
+            Layout.maximumHeight: root.hideHeader ? 0 : 24
             spacing: 6
 
             Text {
@@ -1737,11 +1791,12 @@ BarWidget {
 
           // 1px Divider
           Rectangle {
+            visible: !root.hideHeader
             Layout.fillWidth: true
             Layout.fillHeight: false
-            Layout.preferredHeight: 1
-            Layout.maximumHeight: 1
-            implicitHeight: 1
+            Layout.preferredHeight: root.hideHeader ? 0 : 1
+            Layout.maximumHeight: root.hideHeader ? 0 : 1
+            implicitHeight: root.hideHeader ? 0 : 1
             color: root.tuiBorder
           }
 

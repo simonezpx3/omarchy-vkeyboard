@@ -20,7 +20,8 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "showBadge": true
+      "showBadge": true,
+      "hideHeader": false
     },
     "schema": [
       {
@@ -29,6 +30,13 @@
         "label": "Show Layout Badge",
         "description": "Show layout language badge next to keyboard icon in bar.",
         "defaultValue": true
+      },
+      {
+        "key": "hideHeader",
+        "type": "boolean",
+        "label": "Hide Keyboard Header",
+        "description": "Hide the top header bar of the on-screen virtual keyboard for a minimal borderless look.",
+        "defaultValue": false
       }
     ]
   }
