@@ -74,6 +74,16 @@ BarWidget {
     else setOskOpacity(1.0);
   }
 
+  function makeAsciiBar(pct, totalBlocks): string {
+    var p = Math.max(0, Math.min(100, Number(pct) || 0));
+    var filled = Math.round((p / 100.0) * totalBlocks);
+    var empty = Math.max(0, totalBlocks - filled);
+    var s = "";
+    for (var i = 0; i < filled; i++) s += "█";
+    for (var j = 0; j < empty; j++) s += "░";
+    return s;
+  }
+
   // Format Helper Flags
   readonly property bool isMac: root.currentFormat === "macOS Layout" || root.currentFormat === "Apple Magic Keyboard"
   readonly property bool isApple: isMac
@@ -523,10 +533,10 @@ BarWidget {
       if (open !== root.opened) root.opened = open;
     }
     padding: Style.space(3)
-    contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(310) * Math.max(1.0, Style.fontScale)))
-    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(680) * Math.max(1.0, Style.fontScale)))
+    contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(360) * Math.max(1.0, Style.fontScale)))
+    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(560) * Math.max(1.0, Style.fontScale)))
 
-    Rectangle {
+    FocusScope {
       anchors.fill: parent
       focus: true
       Keys.onPressed: function(event) {
@@ -535,333 +545,589 @@ BarWidget {
           event.accepted = true;
         }
       }
-      color: root.bgCard
-      border.width: 1
-      border.color: root.tuiBorder
 
       ColumnLayout {
         id: popupColumn
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 6
+        anchors.margins: Style.space(4)
+        spacing: 5
 
-        // Header
-        RowLayout {
-          Layout.fillWidth: true
-          Text {
-            text: "󰌌 KEYBOARD CONFIG"
-            font.family: root.monoFont.family
-            font.pixelSize: 11
-            font.bold: true
-            color: root.accentColor
-          }
-          Item { Layout.fillWidth: true }
-          Text {
-            text: "[ESC]"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            color: "#6b7280"
-          }
-        }
-
-        // 1px Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // Section: Active Layout
-        Text {
-          text: "ACTIVE KEYBOARD LAYOUT:"
-          font.family: root.monoFont.family
-          font.pixelSize: 10
-          font.bold: true
-          color: "#9ca3af"
-        }
-
-        Repeater {
-          model: root.availableLayouts
-
-          Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 24
-            color: lMouse.containsMouse ? root.keyHover : (root.currentLayout === modelData.code ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.15) : "transparent")
-            radius: 2
-
-            RowLayout {
-              anchors.fill: parent
-              anchors.leftMargin: 6
-              anchors.rightMargin: 6
-              Text {
-                text: (root.currentLayout === modelData.code ? "● " : "○ ") + modelData.name
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: root.currentLayout === modelData.code
-                color: root.currentLayout === modelData.code ? root.accentColor : root.keyText
-              }
-              Item { Layout.fillWidth: true }
-              Text {
-                text: modelData.code
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: true
-                color: root.currentLayout === modelData.code ? root.accentColor : "#6b7280"
-              }
-            }
-
-            MouseArea {
-              id: lMouse
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                root.setLayout(modelData.code);
-                root.close();
-              }
-            }
-          }
-        }
-
-        // 1px Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // Section: Keyboard Formats
-        Text {
-          text: "KEYBOARD FORMAT / SIZE:"
-          font.family: root.monoFont.family
-          font.pixelSize: 10
-          font.bold: true
-          color: "#9ca3af"
-        }
-
-        Repeater {
-          model: [
-            { id: "60%", name: "60% (Compact)" },
-            { id: "65%", name: "65% (Compact + Arrows)" },
-            { id: "75%", name: "75% (Compact + F-Row)" },
-            { id: "80% (TKL)", name: "80% (TKL Tenkeyless)" },
-            { id: "Full Size", name: "Full Size (100% + Numpad)" },
-            { id: "macOS Layout", name: "macOS Layout (Unix/Mac)" }
-          ]
-
-          Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 24
-            color: fmtItemMouse.containsMouse ? root.keyHover : (root.currentFormat === modelData.id ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.15) : "transparent")
-            radius: 2
-
-            RowLayout {
-              anchors.fill: parent
-              anchors.leftMargin: 6
-              anchors.rightMargin: 6
-              Text {
-                text: (root.currentFormat === modelData.id ? "● " : "○ ") + modelData.name
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: root.currentFormat === modelData.id
-                color: root.currentFormat === modelData.id ? root.accentColor : root.keyText
-              }
-              Item { Layout.fillWidth: true }
-              Text {
-                text: modelData.id === "macOS Layout" ? "macOS" : modelData.id
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                color: "#6b7280"
-              }
-            }
-
-            MouseArea {
-              id: fmtItemMouse
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                root.setFormat(modelData.id);
-                root.close();
-              }
-            }
-          }
-        }
-
-        // 1px Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // Section: Opacity Slider (Presets removed per user instruction)
-        RowLayout {
-          Layout.fillWidth: true
-          Text {
-            text: "WINDOW OPACITY / TRANSPARENCY:"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            font.bold: true
-            color: "#9ca3af"
-          }
-          Item { Layout.fillWidth: true }
-          Text {
-            text: Math.round(root.oskOpacity * 100) + "%"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            font.bold: true
-            color: root.accentColor
-          }
-        }
-
-        // Opacity Slider Track
+        // ===================================================================
+        // 1. INTEGRATED CRT BANNER HEADER
+        // ===================================================================
         Item {
-          id: opacitySlider
           Layout.fillWidth: true
-          implicitHeight: 22
-
-          Rectangle {
-            id: opacTrack
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 6
-            radius: 3
-            color: root.keyBg
-            border.color: root.keyBorder
-            border.width: 1
-
-            Rectangle {
-              anchors.left: parent.left
-              anchors.top: parent.top
-              anchors.bottom: parent.bottom
-              radius: 3
-              width: Math.round(parent.width * Math.max(0, Math.min(1, root.oskOpacity)))
-              color: root.accentColor
-            }
-          }
-
-          // Cursor Thumb
-          Rectangle {
-            width: 10
-            height: 16
-            radius: 2
-            anchors.verticalCenter: opacTrack.verticalCenter
-            x: Math.max(0, Math.min(opacitySlider.width - width, Math.round(opacitySlider.width * Math.max(0, Math.min(1, root.oskOpacity)) - width / 2)))
-            color: opacSliderMouse.containsMouse || opacSliderMouse.pressed ? "#ffffff" : root.accentColor
-            border.color: root.tuiBorder
-            border.width: 1
-          }
-
-          MouseArea {
-            id: opacSliderMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-
-            function updatePos(mx) {
-              var r = Math.max(0.25, Math.min(1.0, mx / width))
-              var stepped = Math.round(r / 0.05) * 0.05
-              root.setOskOpacity(stepped)
-            }
-
-            onPressed: function(mouse) { updatePos(mouse.x) }
-            onPositionChanged: function(mouse) {
-              if (pressed) updatePos(mouse.x)
-            }
-            onWheel: function(wheel) {
-              var d = (wheel.angleDelta.y > 0) ? 0.05 : -0.05
-              root.setOskOpacity(root.oskOpacity + d)
-              wheel.accepted = true
-            }
-          }
-        }
-
-        // 1px Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // Section: System Hardware & XKB Profile
-        RowLayout {
-          Layout.fillWidth: true
-          Text {
-            text: "SYSTEM HARDWARE & XKB PROFILE:"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            font.bold: true
-            color: "#9ca3af"
-          }
-          Item { Layout.fillWidth: true }
-          Text {
-            text: root.sysHasAltGr ? "AltGr: Active" : "Alt: Standard"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            font.bold: true
-            color: root.accentColor
-          }
-        }
-        Text {
-          Layout.fillWidth: true
-          text: "• Independent L/R modifiers (Shift, Ctrl, Alt)" + (root.sysAltShiftToggle ? "\n• Shortcut Alt+Shift: Switch Layout" : "") + (root.sysShiftsToggle ? "\n• Shortcut L+R Shift: Switch Layout" : "") + (root.sysSwapLaltLctl ? "\n• Swapped: Left Ctrl ↔ Left Alt" : "") + (root.sysRctrlIsCompose ? "\n• Right Ctrl: Compose key" : "")
-          font.family: root.monoFont.family
-          font.pixelSize: 10
-          color: "#9ca3af"
-          wrapMode: Text.WordWrap
-        }
-
-        // 1px Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // Action: Toggle OSK
-        Rectangle {
-          Layout.fillWidth: true
-          implicitHeight: 26
-          color: oskActionMouse.containsMouse ? root.keyHover : "transparent"
-          radius: 2
+          implicitHeight: 32
 
           RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 8
             anchors.rightMargin: 8
+            spacing: 6
+
+            // Omarchy Logo
             Text {
-              text: "󰌌"
-              font.family: root.monoFont.family
-              font.pixelSize: 12
+              text: "\ue900"
+              font.family: "omarchy"
+              font.pixelSize: 13
               color: root.accentColor
             }
-            Text {
-              text: root.oskOpen ? "Hide Virtual Keyboard" : "Show Virtual Keyboard"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              color: root.keyText
-            }
-            Item { Layout.fillWidth: true }
-            Text {
-              text: "[L-Click]"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              color: "#6b7280"
-            }
-          }
 
-          MouseArea {
-            id: oskActionMouse
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-              root.oskOpen = !root.oskOpen;
-              root.close();
+            // Title & Subtitle
+            ColumnLayout {
+              spacing: 1
+              Layout.fillWidth: true
+
+              RowLayout {
+                spacing: 6
+                Text {
+                  text: "KEYBOARD CONFIG"
+                  font.family: root.monoFont.family
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: root.keyText
+                }
+                Text {
+                  text: "[" + root.currentLayout + "]"
+                  font.family: root.monoFont.family
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: root.accentColor
+                }
+              }
+
+              Text {
+                text: "│ HYPRLAND · XKB · VIRTUAL OSK (" + root.currentFormat + ")"
+                font.family: root.monoFont.family
+                font.pixelSize: 9
+                color: "#9ca3af"
+                elide: Text.ElideRight
+              }
+            }
+
+            // Quick OSK Status Badge
+            Rectangle {
+              implicitWidth: oskStatusText.implicitWidth + 8
+              implicitHeight: 18
+              radius: 2
+              color: root.oskOpen ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.18) : Qt.rgba(1, 1, 1, 0.05)
+              border.width: 1
+              border.color: root.oskOpen ? root.accentColor : root.keyBorder
+
+              Text {
+                id: oskStatusText
+                anchors.centerIn: parent
+                text: root.oskOpen ? "OSK ON" : "OSK OFF"
+                font.family: root.monoFont.family
+                font.pixelSize: 9
+                font.bold: true
+                color: root.oskOpen ? root.accentColor : "#9ca3af"
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.oskOpen = !root.oskOpen
+              }
+            }
+
+            // Close Button [✕]
+            Text {
+              text: "[✕]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: closePopupMouse.containsMouse ? root.warnColor : "#6b7280"
+
+              MouseArea {
+                id: closePopupMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.close()
+              }
             }
           }
         }
 
-        // 1px Divider
+        // 1px Horizontal Divider
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
 
-        // Subtle s&a footer bar
+        // ===================================================================
+        // 2. ACTIVE KEYBOARD LAYOUT (Monolithic List)
+        // ===================================================================
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 3
+
+          RowLayout {
+            Layout.fillWidth: true
+            Text {
+              text: "┌── ACTIVE KEYBOARD LAYOUT ─────────────────────────"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.cyanColor
+            }
+            Item { Layout.fillWidth: true }
+            Text {
+              text: "SWITCH: L-Click"
+              font.family: root.monoFont.family
+              font.pixelSize: 9
+              color: "#6b7280"
+            }
+          }
+
+          Repeater {
+            model: root.availableLayouts
+
+            Rectangle {
+              Layout.fillWidth: true
+              implicitHeight: 22
+              color: lMouse.containsMouse ? root.keyHover : (root.currentLayout === modelData.code ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14) : "transparent")
+              radius: 2
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                Text {
+                  text: (root.currentLayout === modelData.code ? "● " : "○ ") + modelData.name
+                  font.family: root.monoFont.family
+                  font.pixelSize: 10
+                  font.bold: root.currentLayout === modelData.code
+                  color: root.currentLayout === modelData.code ? root.accentColor : root.keyText
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                  text: "[" + modelData.code + "]"
+                  font.family: root.monoFont.family
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: root.currentLayout === modelData.code ? root.accentColor : "#6b7280"
+                }
+              }
+
+              MouseArea {
+                id: lMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  root.setLayout(modelData.code);
+                }
+              }
+            }
+          }
+        }
+
+        // 1px Horizontal Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // ===================================================================
+        // 3. VIRTUAL KEYBOARD FORMAT (2-Column CRT Grid)
+        // ===================================================================
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 3
+
+          RowLayout {
+            Layout.fillWidth: true
+            Text {
+              text: "┌── VIRTUAL KEYBOARD FORMAT ────────────────────────"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.cyanColor
+            }
+            Item { Layout.fillWidth: true }
+            Text {
+              text: root.currentFormat
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+          }
+
+          GridLayout {
+            Layout.fillWidth: true
+            columns: 2
+            columnSpacing: 6
+            rowSpacing: 3
+
+            Repeater {
+              model: [
+                { id: "75%", label: "75% + F-Row" },
+                { id: "80% (TKL)", label: "80% TKL" },
+                { id: "65%", label: "65% + Arrows" },
+                { id: "Full Size", label: "Full Size 100%" },
+                { id: "60%", label: "60% Minimal" },
+                { id: "macOS Layout", label: "macOS Unix" }
+              ]
+
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 22
+                color: fmtItemMouse.containsMouse ? root.keyHover : (root.currentFormat === modelData.id ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14) : "transparent")
+                radius: 2
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 6
+                  anchors.rightMargin: 6
+                  spacing: 4
+
+                  Text {
+                    text: root.currentFormat === modelData.id ? "●" : "○"
+                    font.family: root.monoFont.family
+                    font.pixelSize: 10
+                    font.bold: root.currentFormat === modelData.id
+                    color: root.currentFormat === modelData.id ? root.accentColor : "#6b7280"
+                  }
+                  Text {
+                    text: modelData.label
+                    font.family: root.monoFont.family
+                    font.pixelSize: 10
+                    font.bold: root.currentFormat === modelData.id
+                    color: root.currentFormat === modelData.id ? root.accentColor : root.keyText
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                  }
+                }
+
+                MouseArea {
+                  id: fmtItemMouse
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    root.setFormat(modelData.id);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 1px Horizontal Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // ===================================================================
+        // 4. WINDOW OPACITY (ASCII CRT Progress Bar + Stepper)
+        // ===================================================================
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 3
+
+          RowLayout {
+            Layout.fillWidth: true
+            Text {
+              text: "┌── WINDOW OPACITY ─────────────────────────────────"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.cyanColor
+            }
+            Item { Layout.fillWidth: true }
+            Text {
+              text: Math.round(root.oskOpacity * 100) + "%"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+          }
+
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: 6
+
+            Text {
+              text: "│"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              color: "#9ca3af"
+            }
+
+            Text {
+              text: "[" + root.makeAsciiBar(Math.round(root.oskOpacity * 100), 16) + "]"
+              font.family: root.monoFont.family
+              font.pixelSize: 10
+              font.bold: true
+              color: root.accentColor
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // Step Down [−]
+            Rectangle {
+              implicitWidth: 22
+              implicitHeight: 18
+              radius: 2
+              color: decMouse.containsMouse ? root.keyHover : Qt.rgba(1, 1, 1, 0.05)
+              border.width: 1
+              border.color: decMouse.containsMouse ? root.accentColor : root.keyBorder
+
+              Text {
+                anchors.centerIn: parent
+                text: "−"
+                font.family: root.monoFont.family
+                font.pixelSize: 11
+                font.bold: true
+                color: decMouse.containsMouse ? root.accentColor : root.keyText
+              }
+              MouseArea {
+                id: decMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.setOskOpacity(root.oskOpacity - 0.10)
+              }
+            }
+
+            // Step Up [+]
+            Rectangle {
+              implicitWidth: 22
+              implicitHeight: 18
+              radius: 2
+              color: incMouse.containsMouse ? root.keyHover : Qt.rgba(1, 1, 1, 0.05)
+              border.width: 1
+              border.color: incMouse.containsMouse ? root.accentColor : root.keyBorder
+
+              Text {
+                anchors.centerIn: parent
+                text: "+"
+                font.family: root.monoFont.family
+                font.pixelSize: 11
+                font.bold: true
+                color: incMouse.containsMouse ? root.accentColor : root.keyText
+              }
+              MouseArea {
+                id: incMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.setOskOpacity(root.oskOpacity + 0.10)
+              }
+            }
+          }
+
+          // Minimalist 4px Track / Slider
+          Item {
+            id: opacitySlider
+            Layout.fillWidth: true
+            implicitHeight: 12
+
+            Rectangle {
+              id: opacTrack
+              anchors.verticalCenter: parent.verticalCenter
+              anchors.left: parent.left
+              anchors.right: parent.right
+              height: 4
+              radius: 2
+              color: root.keyBg
+
+              Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                radius: 2
+                width: Math.round(parent.width * Math.max(0, Math.min(1, root.oskOpacity)))
+                color: root.accentColor
+              }
+            }
+
+            MouseArea {
+              id: opacSliderMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+
+              function updatePos(mx) {
+                var r = Math.max(0.25, Math.min(1.0, mx / width))
+                var stepped = Math.round(r / 0.05) * 0.05
+                root.setOskOpacity(stepped)
+              }
+
+              onPressed: function(mouse) { updatePos(mouse.x) }
+              onPositionChanged: function(mouse) {
+                if (pressed) updatePos(mouse.x)
+              }
+              onWheel: function(wheel) {
+                var d = (wheel.angleDelta.y > 0) ? 0.05 : -0.05
+                root.setOskOpacity(root.oskOpacity + d)
+                wheel.accepted = true
+              }
+            }
+          }
+        }
+
+        // 1px Horizontal Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // ===================================================================
+        // 5. SYSTEM HARDWARE & XKB PROFILE
+        // ===================================================================
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 3
+
+          Text {
+            text: "┌── SYSTEM HARDWARE & XKB PROFILE ──────────────────"
+            font.family: root.monoFont.family
+            font.pixelSize: 10
+            font.bold: true
+            color: root.cyanColor
+          }
+
+          RowLayout {
+            Layout.fillWidth: true
+            Text { text: "│ AltGr :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
+            Text { text: root.sysHasAltGr ? "ACTIVE (ISO L3)" : "STANDARD"; font.family: root.monoFont.family; font.pixelSize: 10; font.bold: true; color: root.accentColor }
+            Item { Layout.fillWidth: true }
+            Text { text: "Switch :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
+            Text { text: root.sysAltShiftToggle ? "Alt+Shift" : (root.sysShiftsToggle ? "L+R Shift" : "SUPER+SPACE"); font.family: root.monoFont.family; font.pixelSize: 10; font.bold: true; color: root.accentColor }
+          }
+
+          RowLayout {
+            Layout.fillWidth: true
+            Text { text: "│ Modifiers :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
+            Text { text: "INDEPENDENT (L/R)"; font.family: root.monoFont.family; font.pixelSize: 10; font.bold: true; color: root.keyText }
+            Item { Layout.fillWidth: true }
+            Text { text: "Compose :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
+            Text { text: root.sysRctrlIsCompose ? "R-CTRL" : "OFF"; font.family: root.monoFont.family; font.pixelSize: 10; color: root.keyText }
+          }
+        }
+
+        // 1px Horizontal Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // ===================================================================
+        // 6. QUICK ACTIONS ROW
+        // ===================================================================
         RowLayout {
           Layout.fillWidth: true
-          Layout.leftMargin: 4
-          Layout.rightMargin: 4
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 6
+
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 26
+            color: oskActionMouse.containsMouse ? root.keyHover : (root.oskOpen ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14) : Qt.rgba(1, 1, 1, 0.04))
+            radius: 2
+            border.width: 1
+            border.color: root.oskOpen ? root.accentColor : root.keyBorder
+
+            RowLayout {
+              anchors.centerIn: parent
+              spacing: 6
+              Text {
+                text: "󰌌"
+                font.family: root.monoFont.family
+                font.pixelSize: 11
+                color: root.accentColor
+              }
+              Text {
+                text: root.oskOpen ? "HIDE VIRTUAL KEYBOARD" : "SHOW VIRTUAL KEYBOARD"
+                font.family: root.monoFont.family
+                font.pixelSize: 10
+                font.bold: true
+                color: root.keyText
+              }
+            }
+
+            MouseArea {
+              id: oskActionMouse
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.oskOpen = !root.oskOpen;
+              }
+            }
+          }
+
+          Rectangle {
+            implicitWidth: 80
+            implicitHeight: 26
+            color: resetActionMouse.containsMouse ? root.keyHover : Qt.rgba(1, 1, 1, 0.04)
+            radius: 2
+            border.width: 1
+            border.color: resetActionMouse.containsMouse ? root.accentColor : root.keyBorder
+
+            RowLayout {
+              anchors.centerIn: parent
+              spacing: 4
+              Text {
+                text: "󰑐"
+                font.family: root.monoFont.family
+                font.pixelSize: 11
+                color: resetActionMouse.containsMouse ? root.accentColor : root.keyText
+              }
+              Text {
+                text: "RESET"
+                font.family: root.monoFont.family
+                font.pixelSize: 10
+                font.bold: true
+                color: resetActionMouse.containsMouse ? root.accentColor : root.keyText
+              }
+            }
+
+            MouseArea {
+              id: resetActionMouse
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.resetOskPosition();
+              }
+            }
+          }
+        }
+
+        // 1px Horizontal Divider
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+
+        // ===================================================================
+        // 7. INTEGRATED CRT FOOTER
+        // ===================================================================
+        RowLayout {
+          Layout.fillWidth: true
+          Layout.leftMargin: 8
+          Layout.rightMargin: 8
+          spacing: 6
+
           Text {
-            text: "v1.5.9"
+            text: "v1.6.0"
             font.family: root.monoFont.family
-            font.pixelSize: 9
+            font.pixelSize: 10
+            color: "#6b7280"
+          }
+          Text {
+            text: "·"
+            font.family: root.monoFont.family
+            font.pixelSize: 10
             color: "#4b5563"
           }
-          Item { Layout.fillWidth: true }
           Text {
-            text: "s&a"
+            text: "[Esc: Close]"
             font.family: root.monoFont.family
-            font.pixelSize: 9
+            font.pixelSize: 10
+            color: "#6b7280"
+          }
+
+          Item { Layout.fillWidth: true }
+
+          Text {
+            text: "s&A"
+            font.family: root.monoFont.family
+            font.pixelSize: 10
             font.bold: true
-            color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.5)
+            color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.6)
           }
         }
       }
@@ -1493,6 +1759,34 @@ BarWidget {
                   resetSpinner.restart();
                   root.resetOskPosition();
                 }
+              }
+            }
+
+            // Settings Button (Opens Keyboard Config Popup)
+            Rectangle {
+              implicitWidth: 26
+              implicitHeight: 20
+              Layout.preferredHeight: 20
+              Layout.maximumHeight: 20
+              Layout.alignment: Qt.AlignVCenter
+              radius: 3
+              color: cfgMouse.containsMouse ? root.keyHover : root.keyBg
+              border.width: 1
+              border.color: cfgMouse.containsMouse ? root.accentColor : root.keyBorder
+
+              Text {
+                anchors.centerIn: parent
+                text: "⚙"
+                font.family: root.monoFont.family
+                font.pixelSize: 12
+                color: cfgMouse.containsMouse ? root.accentColor : "#ffffff"
+              }
+
+              MouseArea {
+                id: cfgMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.toggle()
               }
             }
           }
