@@ -538,9 +538,9 @@ BarWidget {
     onOpenChanged: {
       if (open !== root.opened) root.opened = open;
     }
-    padding: Style.space(3)
-    contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(360) * Math.max(1.0, Style.fontScale)))
-    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight + Style.space(8), Math.round(Style.space(560) * Math.max(1.0, Style.fontScale)))
+    padding: Style.spacing.popupPadding
+    contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(350) * Math.max(1.0, Style.fontScale)))
+    contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight)
 
     FocusScope {
       anchors.fill: parent
@@ -552,640 +552,413 @@ BarWidget {
         }
       }
 
-      ColumnLayout {
+      Column {
         id: popupColumn
-        anchors.fill: parent
-        anchors.margins: Style.space(4)
-        spacing: 5
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        spacing: Style.space(12)
 
-        // ===================================================================
-        // 1. INTEGRATED CRT BANNER HEADER
-        // ===================================================================
+        // ---------- Hero: Keyboard Icon · Title + State · Actions ----------
         Item {
-          Layout.fillWidth: true
-          implicitHeight: 32
+          width: parent.width
+          implicitHeight: Math.max(heroIcon.implicitHeight, heroLabels.implicitHeight, heroActions.implicitHeight)
+
+          Text {
+            id: heroIcon
+            textFormat: Text.PlainText
+            text: "󰌌"
+            color: root.bar ? root.bar.foreground : Color.foreground
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.display
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+          }
 
           RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            spacing: 6
+            id: heroActions
+            spacing: Style.space(8)
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
 
-            // Omarchy Logo
+            Button {
+              id: resetAction
+              iconText: "󰑐"
+              tooltipText: "Reset keyboard position"
+              foreground: root.bar ? root.bar.foreground : Color.foreground
+              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              iconSize: Style.font.subtitle * 1.3
+              horizontalPadding: Style.space(5)
+              verticalPadding: Style.space(2)
+              Layout.alignment: Qt.AlignVCenter
+              onClicked: root.resetOskPosition()
+            }
+
+            ToggleSwitch {
+              id: oskPowerSwitch
+              checked: root.oskOpen
+              foreground: root.bar ? root.bar.foreground : Color.foreground
+              Layout.alignment: Qt.AlignVCenter
+              onToggled: root.oskOpen = !root.oskOpen
+
+              PanelToolTip {
+                visible: oskPowerSwitch.containsMouse
+                text: root.oskOpen ? "Hide on-screen keyboard" : "Show on-screen keyboard"
+                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              }
+            }
+          }
+
+          Column {
+            id: heroLabels
+            anchors.left: heroIcon.right
+            anchors.leftMargin: Style.space(14)
+            anchors.right: parent.right
+            anchors.rightMargin: heroActions.width > 0 ? heroActions.width + Style.space(12) : 0
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(2)
+
             Text {
-              text: "\ue900"
-              font.family: "omarchy"
-              font.pixelSize: 13
-              color: root.accentColor
-            }
-
-            // Title & Subtitle
-            ColumnLayout {
-              spacing: 1
-              Layout.fillWidth: true
-
-              RowLayout {
-                spacing: 6
-                Text {
-                  text: "KEYBOARD CONFIG"
-                  font.family: root.monoFont.family
-                  font.pixelSize: 11
-                  font.bold: true
-                  color: root.keyText
-                }
-                Text {
-                  text: "[" + root.currentLayout + "]"
-                  font.family: root.monoFont.family
-                  font.pixelSize: 10
-                  font.bold: true
-                  color: root.accentColor
-                }
-              }
-
-              Text {
-                text: "│ HYPRLAND · XKB · VIRTUAL OSK (" + root.currentFormat + ")"
-                font.family: root.monoFont.family
-                font.pixelSize: 9
-                color: "#9ca3af"
-                elide: Text.ElideRight
-              }
-            }
-
-            // Quick OSK Status Badge
-            Rectangle {
-              implicitWidth: oskStatusText.implicitWidth + 8
-              implicitHeight: 18
-              radius: 2
-              color: root.oskOpen ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.18) : Qt.rgba(1, 1, 1, 0.05)
-              border.width: 1
-              border.color: root.oskOpen ? root.accentColor : root.keyBorder
-
-              Text {
-                id: oskStatusText
-                anchors.centerIn: parent
-                text: root.oskOpen ? "OSK ON" : "OSK OFF"
-                font.family: root.monoFont.family
-                font.pixelSize: 9
-                font.bold: true
-                color: root.oskOpen ? root.accentColor : "#9ca3af"
-              }
-
-              MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.oskOpen = !root.oskOpen
-              }
-            }
-
-            // Close Button [✕]
-            Text {
-              text: "[✕]"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
+              id: heroTitle
+              textFormat: Text.PlainText
+              width: parent.width
+              text: "Virtual Keyboard"
+              color: root.bar ? root.bar.foreground : Color.foreground
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.title
               font.bold: true
-              color: closePopupMouse.containsMouse ? root.warnColor : "#6b7280"
+              elide: Text.ElideRight
+            }
 
-              MouseArea {
-                id: closePopupMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.close()
-              }
+            Text {
+              id: heroMeta
+              textFormat: Text.PlainText
+              width: parent.width
+              text: (root.oskOpen ? "ACTIVE" : "STANDBY") + " · " + root.currentLayout + " (" + root.layoutFullName + ")"
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              font.bold: true
+              font.letterSpacing: 1.2
+              elide: Text.ElideRight
             }
           }
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // ===================================================================
-        // 2. ACTIVE KEYBOARD LAYOUT (Monolithic List)
-        // ===================================================================
-        ColumnLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 3
-
-          RowLayout {
-            Layout.fillWidth: true
-            Text {
-              text: "┌── ACTIVE KEYBOARD LAYOUT ─────────────────────────"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: true
-              color: root.cyanColor
-            }
-            Item { Layout.fillWidth: true }
-            Text {
-              text: "SWITCH: L-Click"
-              font.family: root.monoFont.family
-              font.pixelSize: 9
-              color: "#6b7280"
-            }
-          }
-
-          Repeater {
-            model: root.availableLayouts
-
-            Rectangle {
-              Layout.fillWidth: true
-              implicitHeight: 22
-              color: lMouse.containsMouse ? root.keyHover : (root.currentLayout === modelData.code ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14) : "transparent")
-              radius: 2
-
-              RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 6
-                anchors.rightMargin: 6
-                Text {
-                  text: (root.currentLayout === modelData.code ? "● " : "○ ") + modelData.name
-                  font.family: root.monoFont.family
-                  font.pixelSize: 10
-                  font.bold: root.currentLayout === modelData.code
-                  color: root.currentLayout === modelData.code ? root.accentColor : root.keyText
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                  text: "[" + modelData.code + "]"
-                  font.family: root.monoFont.family
-                  font.pixelSize: 10
-                  font.bold: true
-                  color: root.currentLayout === modelData.code ? root.accentColor : "#6b7280"
-                }
-              }
-
-              MouseArea {
-                id: lMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  root.setLayout(modelData.code);
-                }
-              }
-            }
-          }
+        // ---------- Section 1: Keyboard Layout ----------
+        PanelSeparator {
+          foreground: root.bar ? root.bar.foreground : Color.foreground
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+        Column {
+          width: parent.width
+          spacing: Style.space(6)
 
-        // ===================================================================
-        // 3. VIRTUAL KEYBOARD FORMAT (2-Column CRT Grid)
-        // ===================================================================
-        ColumnLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 3
-
-          RowLayout {
-            Layout.fillWidth: true
-            Text {
-              text: "┌── VIRTUAL KEYBOARD FORMAT ────────────────────────"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: true
-              color: root.cyanColor
-            }
-            Item { Layout.fillWidth: true }
-            Text {
-              text: root.currentFormat
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: true
-              color: root.accentColor
-            }
+          PanelSectionHeader {
+            text: "KEYBOARD LAYOUT"
+            foreground: root.bar ? root.bar.foreground : Color.foreground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
           }
 
-          GridLayout {
-            Layout.fillWidth: true
-            columns: 2
-            columnSpacing: 6
-            rowSpacing: 3
+          Column {
+            width: parent.width
+            spacing: Style.space(4)
 
             Repeater {
-              model: [
-                { id: "75%", label: "75% + F-Row" },
-                { id: "80% (TKL)", label: "80% TKL" },
-                { id: "65%", label: "65% + Arrows" },
-                { id: "Full Size", label: "Full Size 100%" },
-                { id: "60%", label: "60% Minimal" },
-                { id: "macOS Layout", label: "macOS Unix" }
-              ]
+              model: root.availableLayouts
+              delegate: Button {
+                required property var modelData
+                required property int index
 
-              Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 22
-                color: fmtItemMouse.containsMouse ? root.keyHover : (root.currentFormat === modelData.id ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14) : "transparent")
-                radius: 2
+                width: parent.width
+                horizontalPadding: Style.spacing.controlPaddingX
+                verticalPadding: Style.spacing.controlPaddingY
+                bordered: true
+                active: root.currentLayout === modelData.code
+                selected: root.currentLayout === modelData.code
+                foreground: root.bar ? root.bar.foreground : Color.foreground
+                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
 
                 RowLayout {
                   anchors.fill: parent
-                  anchors.leftMargin: 6
-                  anchors.rightMargin: 6
-                  spacing: 4
+                  spacing: Style.space(8)
 
                   Text {
-                    text: root.currentFormat === modelData.id ? "●" : "○"
+                    text: root.currentLayout === modelData.code ? "●" : "○"
                     font.family: root.monoFont.family
-                    font.pixelSize: 10
-                    font.bold: root.currentFormat === modelData.id
-                    color: root.currentFormat === modelData.id ? root.accentColor : "#6b7280"
+                    font.pixelSize: Style.font.bodySmall
+                    color: root.currentLayout === modelData.code ? Color.accent : Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
                   }
+
                   Text {
-                    text: modelData.label
-                    font.family: root.monoFont.family
-                    font.pixelSize: 10
-                    font.bold: root.currentFormat === modelData.id
-                    color: root.currentFormat === modelData.id ? root.accentColor : root.keyText
-                    elide: Text.ElideRight
+                    text: modelData.name + " (" + modelData.code + ")"
+                    font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                    font.pixelSize: Style.font.bodySmall
+                    font.bold: root.currentLayout === modelData.code
+                    color: root.bar ? root.bar.foreground : Color.foreground
                     Layout.fillWidth: true
                   }
-                }
 
-                MouseArea {
-                  id: fmtItemMouse
-                  anchors.fill: parent
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: {
-                    root.setFormat(modelData.id);
+                  Text {
+                    visible: root.currentLayout === modelData.code
+                    text: "ACTIVE"
+                    font.family: root.monoFont.family
+                    font.pixelSize: Style.font.caption
+                    font.bold: true
+                    color: Color.accent
                   }
                 }
+
+                onClicked: root.setLayout(modelData.code)
               }
             }
           }
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+        // ---------- Section 2: Keyboard Format ----------
+        PanelSeparator {
+          foreground: root.bar ? root.bar.foreground : Color.foreground
+        }
 
-        // ===================================================================
-        // 4. WINDOW OPACITY (ASCII CRT Progress Bar + Stepper)
-        // ===================================================================
-        ColumnLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 3
+        Column {
+          width: parent.width
+          spacing: Style.space(6)
 
-          RowLayout {
-            Layout.fillWidth: true
-            Text {
-              text: "┌── WINDOW OPACITY ─────────────────────────────────"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: true
-              color: root.cyanColor
+          PanelSectionHeader {
+            text: "KEYBOARD FORMAT"
+            foreground: root.bar ? root.bar.foreground : Color.foreground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+          }
+
+          Grid {
+            id: formatGrid
+            width: parent.width
+            columns: 3
+            spacing: Style.space(6)
+
+            Repeater {
+              model: root.availableFormats
+              delegate: Button {
+                required property string modelData
+                required property int index
+
+                width: Math.floor((formatGrid.width - formatGrid.spacing * 2) / 3)
+                text: modelData
+                fontSize: Style.font.bodySmall
+                foreground: root.bar ? root.bar.foreground : Color.foreground
+                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                horizontalPadding: Style.space(4)
+                verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+                bordered: true
+                active: root.currentFormat === modelData
+                selected: root.currentFormat === modelData
+
+                onClicked: root.setFormat(modelData)
+              }
             }
-            Item { Layout.fillWidth: true }
+          }
+        }
+
+        // ---------- Section 3: Window Opacity ----------
+        PanelSeparator {
+          foreground: root.bar ? root.bar.foreground : Color.foreground
+        }
+
+        Column {
+          width: parent.width
+          spacing: Style.space(8)
+
+          Item {
+            width: parent.width
+            implicitHeight: Math.max(opacityHeader.implicitHeight, opacityValue.implicitHeight)
+
+            PanelSectionHeader {
+              id: opacityHeader
+              text: "WINDOW OPACITY"
+              foreground: root.bar ? root.bar.foreground : Color.foreground
+              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              anchors.left: parent.left
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
             Text {
+              id: opacityValue
               text: Math.round(root.oskOpacity * 100) + "%"
               font.family: root.monoFont.family
-              font.pixelSize: 10
+              font.pixelSize: Style.font.bodySmall
               font.bold: true
-              color: root.accentColor
-            }
-          }
-
-          RowLayout {
-            Layout.fillWidth: true
-            spacing: 6
-
-            Text {
-              text: "│"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              color: "#9ca3af"
-            }
-
-            Text {
-              text: "[" + root.makeAsciiBar(Math.round(root.oskOpacity * 100), 16) + "]"
-              font.family: root.monoFont.family
-              font.pixelSize: 10
-              font.bold: true
-              color: root.accentColor
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Step Down [−]
-            Rectangle {
-              implicitWidth: 22
-              implicitHeight: 18
-              radius: 2
-              color: decMouse.containsMouse ? root.keyHover : Qt.rgba(1, 1, 1, 0.05)
-              border.width: 1
-              border.color: decMouse.containsMouse ? root.accentColor : root.keyBorder
-
-              Text {
-                anchors.centerIn: parent
-                text: "−"
-                font.family: root.monoFont.family
-                font.pixelSize: 11
-                font.bold: true
-                color: decMouse.containsMouse ? root.accentColor : root.keyText
-              }
-              MouseArea {
-                id: decMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.setOskOpacity(root.oskOpacity - 0.10)
-              }
-            }
-
-            // Step Up [+]
-            Rectangle {
-              implicitWidth: 22
-              implicitHeight: 18
-              radius: 2
-              color: incMouse.containsMouse ? root.keyHover : Qt.rgba(1, 1, 1, 0.05)
-              border.width: 1
-              border.color: incMouse.containsMouse ? root.accentColor : root.keyBorder
-
-              Text {
-                anchors.centerIn: parent
-                text: "+"
-                font.family: root.monoFont.family
-                font.pixelSize: 11
-                font.bold: true
-                color: incMouse.containsMouse ? root.accentColor : root.keyText
-              }
-              MouseArea {
-                id: incMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.setOskOpacity(root.oskOpacity + 0.10)
-              }
-            }
-          }
-
-          // Minimalist 4px Track / Slider
-          Item {
-            id: opacitySlider
-            Layout.fillWidth: true
-            implicitHeight: 12
-
-            Rectangle {
-              id: opacTrack
-              anchors.verticalCenter: parent.verticalCenter
-              anchors.left: parent.left
+              color: Color.accent
               anchors.right: parent.right
-              height: 4
-              radius: 2
-              color: root.keyBg
-
-              Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                radius: 2
-                width: Math.round(parent.width * Math.max(0, Math.min(1, root.oskOpacity)))
-                color: root.accentColor
-              }
+              anchors.verticalCenter: parent.verticalCenter
             }
+          }
 
-            MouseArea {
-              id: opacSliderMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
+          PanelSlider {
+            width: parent.width
+            bar: root.bar
+            value: root.oskOpacity
+            minimum: 0.25
+            maximum: 1.0
+            step: 0.05
+            onMoved: function(val) { root.setOskOpacity(val) }
+          }
+        }
 
-              function updatePos(mx) {
-                var r = Math.max(0.25, Math.min(1.0, mx / width))
-                var stepped = Math.round(r / 0.05) * 0.05
-                root.setOskOpacity(stepped)
-              }
+        // ---------- Section 4: Header Appearance ----------
+        PanelSeparator {
+          foreground: root.bar ? root.bar.foreground : Color.foreground
+        }
 
-              onPressed: function(mouse) { updatePos(mouse.x) }
-              onPositionChanged: function(mouse) {
-                if (pressed) updatePos(mouse.x)
-              }
-              onWheel: function(wheel) {
-                var d = (wheel.angleDelta.y > 0) ? 0.05 : -0.05
-                root.setOskOpacity(root.oskOpacity + d)
-                wheel.accepted = true
-              }
+        Item {
+          width: parent.width
+          implicitHeight: Math.max(headerToggleLabel.implicitHeight, headerToggleSwitch.implicitHeight)
+
+          PanelSectionHeader {
+            id: headerToggleLabel
+            text: "HIDE KEYBOARD HEADER"
+            foreground: root.bar ? root.bar.foreground : Color.foreground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+          }
+
+          ToggleSwitch {
+            id: headerToggleSwitch
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            checked: root.hideHeader
+            foreground: root.bar ? root.bar.foreground : Color.foreground
+            onToggled: root.hideHeader = !root.hideHeader
+
+            PanelToolTip {
+              visible: headerToggleSwitch.containsMouse
+              text: root.hideHeader ? "Show top header bar on keyboard" : "Hide top header bar for borderless look"
+              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
             }
           }
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // ===================================================================
-        // 5. SYSTEM HARDWARE & XKB PROFILE
-        // ===================================================================
-        ColumnLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 3
-
-          Text {
-            text: "┌── SYSTEM HARDWARE & XKB PROFILE ──────────────────"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            font.bold: true
-            color: root.cyanColor
-          }
-
-          RowLayout {
-            Layout.fillWidth: true
-            Text { text: "│ AltGr :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
-            Text { text: root.sysHasAltGr ? "ACTIVE (ISO L3)" : "STANDARD"; font.family: root.monoFont.family; font.pixelSize: 10; font.bold: true; color: root.accentColor }
-            Item { Layout.fillWidth: true }
-            Text { text: "Switch :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
-            Text { text: root.sysAltShiftToggle ? "Alt+Shift" : (root.sysShiftsToggle ? "L+R Shift" : "SUPER+SPACE"); font.family: root.monoFont.family; font.pixelSize: 10; font.bold: true; color: root.accentColor }
-          }
-
-          RowLayout {
-            Layout.fillWidth: true
-            Text { text: "│ Modifiers :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
-            Text { text: "INDEPENDENT (L/R)"; font.family: root.monoFont.family; font.pixelSize: 10; font.bold: true; color: root.keyText }
-            Item { Layout.fillWidth: true }
-            Text { text: "Compose :"; font.family: root.monoFont.family; font.pixelSize: 10; color: "#9ca3af" }
-            Text { text: root.sysRctrlIsCompose ? "R-CTRL" : "OFF"; font.family: root.monoFont.family; font.pixelSize: 10; color: root.keyText }
-          }
+        // ---------- Section 5: Hardware & XKB Profile ----------
+        PanelSeparator {
+          foreground: root.bar ? root.bar.foreground : Color.foreground
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+        Column {
+          width: parent.width
+          spacing: Style.space(6)
 
-        // ===================================================================
-        // 6. TOGGLE KEYBOARD HEADER
-        // ===================================================================
-        RowLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 6
+          PanelSectionHeader {
+            text: "HARDWARE & XKB PROFILE"
+            foreground: root.bar ? root.bar.foreground : Color.foreground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+          }
 
-          Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 26
-            color: toggleHeaderMouse.containsMouse ? root.keyHover : (root.hideHeader ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.12) : Qt.rgba(1, 1, 1, 0.04))
-            radius: 2
-            border.width: 1
-            border.color: root.hideHeader ? root.accentColor : root.keyBorder
+          GridLayout {
+            width: parent.width
+            columns: 4
+            columnSpacing: Style.space(12)
+            rowSpacing: Style.space(4)
 
-            RowLayout {
-              anchors.centerIn: parent
-              spacing: 6
-
-              Text {
-                text: root.hideHeader ? "[×]" : "[ ]"
-                font.family: root.monoFont.family
-                font.pixelSize: 11
-                font.bold: true
-                color: root.hideHeader ? root.accentColor : "#9ca3af"
-              }
-
-              Text {
-                text: "HIDE KEYBOARD HEADER"
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: true
-                color: root.hideHeader ? root.accentColor : root.keyText
-              }
+            Text {
+              text: "AltGr"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              font.bold: true
+            }
+            Text {
+              text: root.sysHasAltGr ? "Active" : "Standard"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.bodySmall
+              color: root.bar ? root.bar.foreground : Color.foreground
             }
 
-            MouseArea {
-              id: toggleHeaderMouse
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                root.hideHeader = !root.hideHeader;
-              }
+            Text {
+              text: "Switch"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              font.bold: true
+            }
+            Text {
+              text: root.sysAltShiftToggle ? "Alt+Shift" : (root.sysShiftsToggle ? "L+R Shift" : "Super+Space")
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.bodySmall
+              color: root.bar ? root.bar.foreground : Color.foreground
+            }
+
+            Text {
+              text: "Modifiers"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              font.bold: true
+            }
+            Text {
+              text: "Separate (L/R)"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.bodySmall
+              color: root.bar ? root.bar.foreground : Color.foreground
+            }
+
+            Text {
+              text: "Compose"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              font.bold: true
+            }
+            Text {
+              text: root.sysRctrlIsCompose ? "R-Ctrl" : "Off"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.bodySmall
+              color: root.bar ? root.bar.foreground : Color.foreground
             }
           }
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
-
-        // ===================================================================
-        // 7. QUICK ACTIONS ROW
-        // ===================================================================
-        RowLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 6
-
-          Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 26
-            color: oskActionMouse.containsMouse ? root.keyHover : (root.oskOpen ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14) : Qt.rgba(1, 1, 1, 0.04))
-            radius: 2
-            border.width: 1
-            border.color: root.oskOpen ? root.accentColor : root.keyBorder
-
-            RowLayout {
-              anchors.centerIn: parent
-              spacing: 6
-              Text {
-                text: "󰌌"
-                font.family: root.monoFont.family
-                font.pixelSize: 11
-                color: root.accentColor
-              }
-              Text {
-                text: root.oskOpen ? "HIDE VIRTUAL KEYBOARD" : "SHOW VIRTUAL KEYBOARD"
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: true
-                color: root.keyText
-              }
-            }
-
-            MouseArea {
-              id: oskActionMouse
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                root.oskOpen = !root.oskOpen;
-              }
-            }
-          }
-
-          Rectangle {
-            implicitWidth: 80
-            implicitHeight: 26
-            color: resetActionMouse.containsMouse ? root.keyHover : Qt.rgba(1, 1, 1, 0.04)
-            radius: 2
-            border.width: 1
-            border.color: resetActionMouse.containsMouse ? root.accentColor : root.keyBorder
-
-            RowLayout {
-              anchors.centerIn: parent
-              spacing: 4
-              Text {
-                text: "󰑐"
-                font.family: root.monoFont.family
-                font.pixelSize: 11
-                color: resetActionMouse.containsMouse ? root.accentColor : root.keyText
-              }
-              Text {
-                text: "RESET"
-                font.family: root.monoFont.family
-                font.pixelSize: 10
-                font.bold: true
-                color: resetActionMouse.containsMouse ? root.accentColor : root.keyText
-              }
-            }
-
-            MouseArea {
-              id: resetActionMouse
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                root.resetOskPosition();
-              }
-            }
-          }
+        // ---------- Footer: Version, DNA & Shortcut Hint ----------
+        PanelSeparator {
+          foreground: root.bar ? root.bar.foreground : Color.foreground
         }
 
-        // 1px Horizontal Divider
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: root.tuiBorder }
+        Item {
+          width: parent.width
+          implicitHeight: Style.space(16)
 
-        // ===================================================================
-        // 8. INTEGRATED CRT FOOTER
-        // ===================================================================
-        RowLayout {
-          Layout.fillWidth: true
-          Layout.leftMargin: 8
-          Layout.rightMargin: 8
-          spacing: 6
+          Row {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(6)
+
+            Text {
+              text: "v1.6.0"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
+            }
+            Text {
+              text: "·"
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
+            }
+            Text {
+              text: "s&A"
+              font.family: root.monoFont.family
+              font.pixelSize: Style.font.caption
+              font.bold: true
+              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+            }
+          }
 
           Text {
-            text: "v1.6.0"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            color: "#6b7280"
-          }
-          Text {
-            text: "·"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            color: "#4b5563"
-          }
-          Text {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
             text: "[Esc: Close]"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            color: "#6b7280"
-          }
-
-          Item { Layout.fillWidth: true }
-
-          Text {
-            text: "s&A"
-            font.family: root.monoFont.family
-            font.pixelSize: 10
-            font.bold: true
-            color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.6)
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
           }
         }
       }
