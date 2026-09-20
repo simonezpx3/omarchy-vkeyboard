@@ -1502,7 +1502,7 @@ BarWidget {
             }
 
             Text {
-              text: root.oskWidth < 800 ? "󰌌 KEYBOARD" : (root.oskWidth < 960 ? "󰌌 VIRTUAL KEYBOARD" : "󰌌 VIRTUAL KEYBOARD // ON-SCREEN")
+              text: root.oskWidth < 800 ? "KEYBOARD" : (root.oskWidth < 960 ? "VIRTUAL KEYBOARD" : "VIRTUAL KEYBOARD // ON-SCREEN")
               font.family: root.monoFont.family
               font.pixelSize: 11
               font.bold: true
@@ -1653,39 +1653,6 @@ BarWidget {
               }
             }
 
-            // Quick Opacity Badge (Cycle 100% -> 80% -> 60% -> 40%)
-            Rectangle {
-              implicitWidth: opacBadgeLabel.implicitWidth + 12
-              implicitHeight: 20
-              Layout.preferredHeight: 20
-              Layout.maximumHeight: 20
-              Layout.alignment: Qt.AlignVCenter
-              radius: 3
-              color: opacBadgeMouse.containsMouse ? root.keyHover : root.keyBg
-              border.width: 1
-              border.color: opacBadgeMouse.containsMouse ? root.accentColor : root.keyBorder
-
-              RowLayout {
-                anchors.centerIn: parent
-                spacing: 3
-                Text {
-                  id: opacBadgeLabel
-                  text: "◐ " + Math.round(root.oskOpacity * 100) + "%"
-                  font.family: root.monoFont.family
-                  font.pixelSize: 10
-                  font.bold: true
-                  color: opacBadgeMouse.containsMouse ? root.accentColor : root.keyText
-                }
-              }
-
-              MouseArea {
-                id: opacBadgeMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.cycleOpacity()
-              }
-            }
-
             // Format Selector Badge
             Rectangle {
               implicitWidth: fmtLabel.implicitWidth + 14
@@ -1703,7 +1670,7 @@ BarWidget {
                 spacing: 3
                 Text {
                   id: fmtLabel
-                  text: "⌨ " + root.currentFormat + " ▾"
+                  text: root.currentFormat + " ▾"
                   font.family: root.monoFont.family
                   font.pixelSize: 10
                   font.bold: true
@@ -1759,34 +1726,6 @@ BarWidget {
                   resetSpinner.restart();
                   root.resetOskPosition();
                 }
-              }
-            }
-
-            // Settings Button (Opens Keyboard Config Popup)
-            Rectangle {
-              implicitWidth: 26
-              implicitHeight: 20
-              Layout.preferredHeight: 20
-              Layout.maximumHeight: 20
-              Layout.alignment: Qt.AlignVCenter
-              radius: 3
-              color: cfgMouse.containsMouse ? root.keyHover : root.keyBg
-              border.width: 1
-              border.color: cfgMouse.containsMouse ? root.accentColor : root.keyBorder
-
-              Text {
-                anchors.centerIn: parent
-                text: "⚙"
-                font.family: root.monoFont.family
-                font.pixelSize: 12
-                color: cfgMouse.containsMouse ? root.accentColor : "#ffffff"
-              }
-
-              MouseArea {
-                id: cfgMouse
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.toggle()
               }
             }
           }
@@ -2018,7 +1957,6 @@ BarWidget {
               textNormal: root.isMac ? "return" : "↵ ENTER"
               keyCommand: "Return"
               customWidth: root.isMac ? 90 : 98
-              customBg: Qt.rgba(52/255, 211/255, 153/255, 0.22)
             }
 
             // Extensions: 65% / 75%
@@ -2087,7 +2025,7 @@ BarWidget {
             KeyBtn { visible: root.hasNumpad; textNormal: "1"; keyCommand: "KP_1"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "2"; keyCommand: "KP_2"; customWidth: 44 }
             KeyBtn { visible: root.hasNumpad; textNormal: "3"; keyCommand: "KP_3"; customWidth: 44 }
-            KeyBtn { visible: root.hasNumpad; textNormal: "↵"; keyCommand: "KP_Enter"; customWidth: 44; customBg: Qt.rgba(52/255, 211/255, 153/255, 0.22) }
+            KeyBtn { visible: root.hasNumpad; textNormal: "↵"; keyCommand: "KP_Enter"; customWidth: 44 }
           }
 
           // ----------------------------------------------------
