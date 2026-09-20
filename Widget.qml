@@ -652,7 +652,7 @@ BarWidget {
 
         Column {
           width: parent.width
-          spacing: Style.space(6)
+          spacing: Style.space(8)
 
           PanelSectionHeader {
             text: "KEYBOARD LAYOUT"
@@ -660,9 +660,11 @@ BarWidget {
             fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
           }
 
-          Column {
+          Grid {
+            id: layoutGrid
             width: parent.width
-            spacing: Style.space(4)
+            columns: Math.min(2, Math.max(1, root.availableLayouts.length))
+            spacing: Style.space(6)
 
             Repeater {
               model: root.availableLayouts
@@ -670,44 +672,16 @@ BarWidget {
                 required property var modelData
                 required property int index
 
-                width: parent.width
-                horizontalPadding: Style.spacing.controlPaddingX
-                verticalPadding: Style.spacing.controlPaddingY
+                width: Math.floor((layoutGrid.width - layoutGrid.spacing * (layoutGrid.columns - 1)) / layoutGrid.columns)
+                text: (modelData.name || modelData.code) + " [" + modelData.code + "]"
+                fontSize: Style.font.bodySmall
+                foreground: root.bar ? root.bar.foreground : Color.foreground
+                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                horizontalPadding: Style.space(6)
+                verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
                 bordered: true
                 active: root.currentLayout === modelData.code
                 selected: root.currentLayout === modelData.code
-                foreground: root.bar ? root.bar.foreground : Color.foreground
-                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-
-                RowLayout {
-                  anchors.fill: parent
-                  spacing: Style.space(8)
-
-                  Text {
-                    text: root.currentLayout === modelData.code ? "●" : "○"
-                    font.family: root.monoFont.family
-                    font.pixelSize: Style.font.bodySmall
-                    color: root.currentLayout === modelData.code ? Color.accent : Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
-                  }
-
-                  Text {
-                    text: modelData.name + " (" + modelData.code + ")"
-                    font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                    font.pixelSize: Style.font.bodySmall
-                    font.bold: root.currentLayout === modelData.code
-                    color: root.bar ? root.bar.foreground : Color.foreground
-                    Layout.fillWidth: true
-                  }
-
-                  Text {
-                    visible: root.currentLayout === modelData.code
-                    text: "ACTIVE"
-                    font.family: root.monoFont.family
-                    font.pixelSize: Style.font.caption
-                    font.bold: true
-                    color: Color.accent
-                  }
-                }
 
                 onClicked: root.setLayout(modelData.code)
               }
@@ -722,7 +696,7 @@ BarWidget {
 
         Column {
           width: parent.width
-          spacing: Style.space(6)
+          spacing: Style.space(8)
 
           PanelSectionHeader {
             text: "KEYBOARD FORMAT"
@@ -784,8 +758,8 @@ BarWidget {
             Text {
               id: opacityValue
               text: Math.round(root.oskOpacity * 100) + "%"
-              font.family: root.monoFont.family
-              font.pixelSize: Style.font.bodySmall
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.caption
               font.bold: true
               color: Color.accent
               anchors.right: parent.right
@@ -809,31 +783,51 @@ BarWidget {
           foreground: root.bar ? root.bar.foreground : Color.foreground
         }
 
-        Item {
+        Column {
           width: parent.width
-          implicitHeight: Math.max(headerToggleLabel.implicitHeight, headerToggleSwitch.implicitHeight)
+          spacing: Style.space(8)
 
-          PanelSectionHeader {
-            id: headerToggleLabel
-            text: "HIDE KEYBOARD HEADER"
-            foreground: root.bar ? root.bar.foreground : Color.foreground
-            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-          }
+          Item {
+            width: parent.width
+            implicitHeight: Math.max(headerToggleLabel.implicitHeight, headerToggleRow.implicitHeight)
 
-          ToggleSwitch {
-            id: headerToggleSwitch
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            checked: root.hideHeader
-            foreground: root.bar ? root.bar.foreground : Color.foreground
-            onToggled: root.hideHeader = !root.hideHeader
-
-            PanelToolTip {
-              visible: headerToggleSwitch.containsMouse
-              text: root.hideHeader ? "Show top header bar on keyboard" : "Hide top header bar for borderless look"
+            PanelSectionHeader {
+              id: headerToggleLabel
+              text: "HEADER VISIBILITY"
+              foreground: root.bar ? root.bar.foreground : Color.foreground
               fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              anchors.left: parent.left
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Row {
+              id: headerToggleRow
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(6)
+
+              Text {
+                text: root.hideHeader ? "HIDDEN" : "VISIBLE"
+                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                color: root.hideHeader ? Color.accent : Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+                anchors.verticalCenter: parent.verticalCenter
+              }
+
+              ToggleSwitch {
+                id: headerToggleSwitch
+                anchors.verticalCenter: parent.verticalCenter
+                checked: root.hideHeader
+                foreground: root.bar ? root.bar.foreground : Color.foreground
+                onToggled: root.hideHeader = !root.hideHeader
+
+                PanelToolTip {
+                  visible: headerToggleSwitch.containsMouse
+                  text: root.hideHeader ? "Show top header bar on keyboard" : "Hide top header bar for borderless look"
+                  fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                }
+              }
             }
           }
         }
@@ -866,7 +860,7 @@ BarWidget {
             }
             Text {
               text: "s&A"
-              font.family: root.monoFont.family
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.caption
               font.bold: true
               color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
