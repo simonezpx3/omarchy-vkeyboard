@@ -1,6 +1,6 @@
 # Virtual Keyboard & Layout (`simonez.vkeyboard`)
 
-[![Version](https://img.shields.io/badge/version-1.6.0-3b82f6.svg)](https://github.com/simonezpx3/omarchy-vkeyboard/releases/tag/v1.6.0)
+[![Version](https://img.shields.io/badge/version-1.6.1-3b82f6.svg)](https://github.com/simonezpx3/omarchy-vkeyboard/releases/tag/v1.6.1)
 [![Omarchy](https://img.shields.io/badge/omarchy-compatible-10b981.svg)](https://github.com/omacom/omarchy)
 [![Wayland](https://img.shields.io/badge/wayland-layer--shell-06b6d4.svg)](https://wayland.freedesktop.org/)
 [![Marketplace](https://img.shields.io/badge/marketplace-published%20%26%20verified-10b981.svg)](https://omarchyplugins.com/plugin.html?id=simonez.vkeyboard)
@@ -9,7 +9,7 @@
 An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `wtype` keystroke injection, system shortcut dispatching, dynamic multi-language XKB layout switching, and **Unified CRT Monolithic Grid** styling for Omarchy Linux & Hyprland.
 
 **Authors:** `simonez & Arci`  
-**Version:** `1.6.0`  
+**Version:** `1.6.1`  
 **License:** MIT  
 **Marketplace:** [Published & Verified on Omarchy Plugins](https://omarchyplugins.com/plugin.html?id=simonez.vkeyboard) (Automated Security Baseline: **PASSED**, [Issue #7624](https://github.com/omacom/omarchy-plugin-marketplace/issues/7624))
 
