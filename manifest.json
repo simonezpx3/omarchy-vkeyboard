@@ -10,7 +10,7 @@
     "bar-widget"
   ],
   "entryPoints": {
-    "barWidget": "Widget.qml"
+    "barWidget": "BarWidget.qml"
   },
   "barWidget": {
     "displayName": "Virtual Keyboard",

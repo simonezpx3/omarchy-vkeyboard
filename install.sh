@@ -17,9 +17,13 @@ echo "-> Deploying plugin files to ${TARGET_PLUGIN_DIR}..."
 rm -rf "${TARGET_PLUGIN_DIR}"
 mkdir -p "${TARGET_PLUGIN_DIR}"
 cp "${SCRIPT_DIR}/manifest.json" "${TARGET_PLUGIN_DIR}/"
-cp "${SCRIPT_DIR}/Widget.qml" "${TARGET_PLUGIN_DIR}/"
+cp "${SCRIPT_DIR}/BarWidget.qml" "${TARGET_PLUGIN_DIR}/"
+cp "${SCRIPT_DIR}/Panel.qml" "${TARGET_PLUGIN_DIR}/"
+cp -r "${SCRIPT_DIR}/views" "${TARGET_PLUGIN_DIR}/"
 cp -r "${SCRIPT_DIR}/scripts" "${TARGET_PLUGIN_DIR}/"
-cp -r "${SCRIPT_DIR}/assets" "${TARGET_PLUGIN_DIR}/" 2>/dev/null || true
+if [[ -d "${SCRIPT_DIR}/assets" ]]; then
+  cp -r "${SCRIPT_DIR}/assets" "${TARGET_PLUGIN_DIR}/"
+fi
 
 # Permissions Hardening
 find "${TARGET_PLUGIN_DIR}" -type d -exec chmod 0755 {} +
@@ -50,6 +54,10 @@ fi
 
 # 6. Reload / Restart Shell
 echo "-> Restarting Omarchy Shell..."
-omarchy restart shell || true
+if [[ -x "/usr/share/omarchy/bin/omarchy-restart-shell" ]]; then
+  /usr/share/omarchy/bin/omarchy-restart-shell || true
+elif command -v omarchy-shell >/dev/null 2>&1; then
+  omarchy-shell shell rescanPlugins || true
+fi
 
 echo "=== Virtual Keyboard installed successfully! ==="
