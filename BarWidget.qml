@@ -14,6 +14,10 @@ BarWidget {
   moduleName: "simonez.vkeyboard"
   readonly property var barWidgetHost: root
 
+  // Live Script Paths (Zero dependency on pre-existing PATH; resolves from plugin location)
+  readonly property string ctlScriptPath: Qt.resolvedUrl("scripts/vkeyboard_ctl.py").toString().replace(/^file:\/\//, "")
+  readonly property string ctlBinPath: Qt.resolvedUrl("bin/vkeyboard-ctl").toString().replace(/^file:\/\//, "")
+
   // Live Layout Properties
   property string currentLayout: "EN"
   property int layoutIndex: 0
@@ -290,7 +294,7 @@ BarWidget {
       if (root.shiftActive) sMods.push("shift");
       if (root.ctrlActive) sMods.push("ctrl");
       if (root.altActive) sMods.push("alt");
-      Quickshell.execDetached(["vkeyboard-ctl", "dispatch", char, sMods.join(",")]);
+      Quickshell.execDetached(["python3", root.ctlScriptPath, "dispatch", char, sMods.join(",")]);
       root.resetModifiers();
       return;
     }
@@ -373,7 +377,7 @@ BarWidget {
       if (root.shiftActive) kMods.push("shift");
       if (root.ctrlActive) kMods.push("ctrl");
       if (root.altActive) kMods.push("alt");
-      Quickshell.execDetached(["vkeyboard-ctl", "dispatch", targetKey, kMods.join(",")]);
+      Quickshell.execDetached(["python3", root.ctlScriptPath, "dispatch", targetKey, kMods.join(",")]);
       root.resetModifiers();
       return;
     }
@@ -424,7 +428,7 @@ BarWidget {
   // Layout Polling & Querying Process
   Process {
     id: statusProc
-    command: ["vkeyboard-ctl", "status"]
+    command: ["python3", root.ctlScriptPath, "status"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -564,5 +568,15 @@ BarWidget {
         item.root = root;
       }
     }
+  }
+
+  // Ensure CLI wrapper symlink exists in ~/.local/bin even when installed via 'omarchy plugin add'
+  Component.onCompleted: {
+    var src = root.ctlBinPath;
+    var dest = Quickshell.env("HOME") + "/.local/bin/vkeyboard-ctl";
+    Quickshell.execDetached([
+      "sh", "-c",
+      "mkdir -p \"$HOME/.local/bin\" && if [ ! -e \"" + dest + "\" ] || [ -L \"" + dest + "\" ]; then ln -sfn \"" + src + "\" \"" + dest + "\"; chmod +x \"" + src + "\"; fi"
+    ]);
   }
 }

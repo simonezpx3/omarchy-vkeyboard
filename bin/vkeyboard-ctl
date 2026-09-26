@@ -1,2 +1,29 @@
-#!/bin/bash
-exec /usr/bin/python3 "$HOME/Projects/VirtualKeyboard/scripts/vkeyboard_ctl.py" "$@"
+#!/usr/bin/env bash
+# Virtual Keyboard & Layout CLI wrapper for Omarchy / Hyprland
+set -euo pipefail
+
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+BIN_DIR="$(dirname "${SCRIPT_PATH}")"
+
+# Candidate locations for vkeyboard_ctl.py
+CANDIDATES=(
+  "${BIN_DIR}/../scripts/vkeyboard_ctl.py"
+  "${BIN_DIR}/scripts/vkeyboard_ctl.py"
+  "${HOME}/.config/omarchy/plugins/simonez.vkeyboard/scripts/vkeyboard_ctl.py"
+  "${HOME}/Projects/VirtualKeyboard/scripts/vkeyboard_ctl.py"
+)
+
+TARGET=""
+for c in "${CANDIDATES[@]}"; do
+  if [[ -f "$c" ]]; then
+    TARGET="$c"
+    break
+  fi
+done
+
+if [[ -z "$TARGET" ]]; then
+  echo "vkeyboard-ctl: error: cannot find vkeyboard_ctl.py in any candidate location" >&2
+  exit 1
+fi
+
+exec /usr/bin/python3 "$TARGET" "$@"

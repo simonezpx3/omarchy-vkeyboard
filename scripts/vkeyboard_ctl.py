@@ -395,33 +395,47 @@ def is_terminal():
     return False
 
 
-def load_keybindings_map():
-    import glob
-    cache_files = glob.glob(os.path.expanduser("~/.cache/omarchy/keybindings-*.records"))
-    if not cache_files:
-        try:
-            subprocess.run(["omarchy", "menu", "keybindings", "--print"], capture_output=True, timeout=2, check=False)
-            cache_files = glob.glob(os.path.expanduser("~/.cache/omarchy/keybindings-*.records"))
-        except (subprocess.SubprocessError, OSError):
-            pass
-    if not cache_files:
+# Built-in Omarchy compositor shortcuts fallback
+_DEFAULT_OMARCHY_BINDS = {
+    (frozenset({"SUPER"}), "W"): ("lua", "hl.dsp.window.close()"),
+    (frozenset({"SUPER"}), "RETURN"): ("exec", "omarchy-launch-terminal"),
+    (frozenset({"SUPER"}), "SPACE"): ("exec", "omarchy-menu toggle root"),
+    (frozenset({"SUPER"}), "ESCAPE"): ("exec", "omarchy-menu-system"),
+    (frozenset({"SUPER"}), "F"): ("lua", "hl.dsp.window.fullscreen()"),
+    (frozenset({"SUPER"}), "T"): ("lua", "hl.dsp.window.toggle_floating()"),
+    (frozenset({"SUPER"}), "J"): ("lua", "hl.dsp.window.toggle_split()"),
+    (frozenset({"SUPER"}), "O"): ("lua", "hl.dsp.window.popin()"),
+    (frozenset({"SUPER"}), "K"): ("exec", "omarchy menu keybindings"),
+    (frozenset({"SUPER", "SHIFT"}), "RETURN"): ("exec", "omarchy-launch-browser"),
+    (frozenset({"SUPER", "SHIFT"}), "F"): ("exec", "omarchy-launch-file-manager"),
+    (frozenset({"SUPER", "CTRL"}), "L"): ("exec", "omarchy-lock-screen"),
+}
+
+
+def _load_user_bindings_lua():
+    """Directly parse ~/.config/hypr/bindings.lua for user-defined shortcuts."""
+    lua_path = Path.home() / ".config" / "hypr" / "bindings.lua"
+    if not lua_path.is_file():
         return {}
-
-    cache_file = max(cache_files, key=os.path.getmtime)
-    mapping = {}
+    user_map = {}
     try:
-        with open(cache_file, "r", encoding="utf-8") as f:
+        import re
+        pattern = re.compile(
+            r'o\.bind\s*\(\s*["\']([^"\']+)["\']\s*,\s*(?:["\'][^"\']*["\']|nil)\s*,\s*["\']([^"\']+)["\']\s*\)'
+        )
+        with open(lua_path, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
-                line = line.rstrip("\r\n")
-                if not line or "\t" not in line:
+                comment_pos = line.find("--")
+                if comment_pos != -1:
+                    line = line[:comment_pos]
+                line = line.strip()
+                if not line:
                     continue
-                parts = line.split("\t")
-                left = parts[0]
-                disp = parts[1] if len(parts) > 1 else ""
-                arg = parts[2] if len(parts) > 2 else ""
-
-                combo_part = left.split("→")[0].strip()
-                tokens = combo_part.replace("+", " ").split()
+                m = pattern.search(line)
+                if not m:
+                    continue
+                keys_str, cmd = m.group(1), m.group(2)
+                tokens = keys_str.replace("+", " ").split()
                 c_mods = set()
                 c_keys = []
                 for t in tokens:
@@ -437,9 +451,76 @@ def load_keybindings_map():
                     else:
                         c_keys.append(tu)
                 c_key = " ".join(c_keys)
-                mapping[(frozenset(c_mods), c_key)] = (disp, arg)
-    except OSError:
+                if not c_key:
+                    continue
+                cmd_clean = cmd.strip()
+                if cmd_clean.startswith("lua "):
+                    user_map[(frozenset(c_mods), c_key)] = ("lua", cmd_clean[4:].strip())
+                elif cmd_clean.startswith("hl.dsp."):
+                    user_map[(frozenset(c_mods), c_key)] = ("lua", cmd_clean)
+                else:
+                    user_map[(frozenset(c_mods), c_key)] = ("exec", cmd_clean)
+    except Exception:
         pass
+    return user_map
+
+
+def load_keybindings_map():
+    import glob
+    cache_files = glob.glob(os.path.expanduser("~/.cache/omarchy/keybindings-*.records"))
+    if not cache_files:
+        try:
+            subprocess.run(["omarchy", "menu", "keybindings", "--print"], capture_output=True, timeout=2, check=False)
+            cache_files = glob.glob(os.path.expanduser("~/.cache/omarchy/keybindings-*.records"))
+        except (subprocess.SubprocessError, OSError):
+            pass
+
+    mapping = {}
+    if cache_files:
+        cache_file = max(cache_files, key=os.path.getmtime)
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.rstrip("\r\n")
+                    if not line or "\t" not in line:
+                        continue
+                    parts = line.split("\t")
+                    left = parts[0]
+                    disp = parts[1] if len(parts) > 1 else ""
+                    arg = parts[2] if len(parts) > 2 else ""
+
+                    # Only record non-empty dispatchers so corrupted/aborted cache records
+                    # do not shadow legitimate fallback bindings
+                    if not disp:
+                        continue
+
+                    combo_part = left.split("→")[0].strip()
+                    tokens = combo_part.replace("+", " ").split()
+                    c_mods = set()
+                    c_keys = []
+                    for t in tokens:
+                        tu = t.upper()
+                        if tu in ("SUPER", "WIN", "LOGO"):
+                            c_mods.add("SUPER")
+                        elif tu in ("SHIFT",):
+                            c_mods.add("SHIFT")
+                        elif tu in ("CTRL", "CONTROL"):
+                            c_mods.add("CTRL")
+                        elif tu in ("ALT",):
+                            c_mods.add("ALT")
+                        else:
+                            c_keys.append(tu)
+                    c_key = " ".join(c_keys)
+                    mapping[(frozenset(c_mods), c_key)] = (disp, arg)
+        except OSError:
+            pass
+
+    # Augment with direct scan of ~/.config/hypr/bindings.lua
+    user_bindings = _load_user_bindings_lua()
+    for k, v in user_bindings.items():
+        if k not in mapping:
+            mapping[k] = v
+
     return mapping
 
 
@@ -494,8 +575,17 @@ def dispatch_shortcut(key_name, modifiers=None):
 
     mapping = load_keybindings_map()
     entry = mapping.get((frozenset(mod_set), key_norm))
+
+    # Fallback to built-in default bindings if missing or unmapped
+    if not entry:
+        entry = _DEFAULT_OMARCHY_BINDS.get((frozenset(mod_set), key_norm))
+
+    # Fallback for dynamic numeric workspace switches
     if not entry and key_norm.isdigit():
-        entry = mapping.get((frozenset(mod_set), key_norm))
+        if mod_set == {"SUPER"}:
+            entry = ("lua", f"hl.dsp.workspace.focus('{key_norm}')")
+        elif mod_set == {"SUPER", "SHIFT"}:
+            entry = ("lua", f"hl.dsp.workspace.move_window('{key_norm}')")
 
     if entry:
         disp, arg = entry
@@ -521,7 +611,14 @@ def dispatch_shortcut(key_name, modifiers=None):
             subprocess.run(["hyprctl", "dispatch", disp], capture_output=True, timeout=2, check=False)
             return
 
-    # Fallback to wtype
+    # Fallback to wtype with informative diagnostic if SUPER chord misses compositor
+    if "SUPER" in mod_set:
+        sys.stderr.write(
+            f"vkeyboard-ctl: note: no compositor dispatcher found for {'+'.join(mod_set)}+{key_norm}; "
+            "injecting synthetic key via wtype (Wayland virtual-keyboard protocol may not trigger compositor bindings)\n"
+        )
+        sys.stderr.flush()
+
     type_key(key_name, mods_list)
 
 
