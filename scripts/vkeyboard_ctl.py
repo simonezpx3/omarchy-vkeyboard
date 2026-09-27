@@ -27,7 +27,7 @@ def _read_cache():
             if isinstance(data, dict):
                 ts = data.get("_timestamp", 0)
                 payload = data.get("payload")
-                if time.time() - ts < _CACHE_TTL and payload is not None:
+                if 0 <= (time.monotonic() - ts) < _CACHE_TTL and payload is not None:
                     return payload
     except Exception:
         pass
@@ -39,7 +39,7 @@ def _write_cache(payload):
         return
     try:
         data = {
-            "_timestamp": time.time(),
+            "_timestamp": time.monotonic(),
             "payload": payload
         }
         content = json.dumps(data)
