@@ -12,7 +12,6 @@ import qs.Ui
 BarWidget {
   id: root
   moduleName: "simonez.vkeyboard"
-  readonly property var barWidgetHost: root
 
   // Live Script Paths (Zero dependency on pre-existing PATH; resolves from plugin location)
   readonly property string ctlScriptPath: Qt.resolvedUrl("scripts/vkeyboard_ctl.py").toString().replace(/^file:\/\//, "")
@@ -489,6 +488,12 @@ BarWidget {
 
   Component.onCompleted: {
     statusProc.running = true;
+    var src = root.ctlBinPath;
+    var dest = Quickshell.env("HOME") + "/.local/bin/vkeyboard-ctl";
+    Quickshell.execDetached([
+      "sh", "-c",
+      "mkdir -p \"$HOME/.local/bin\" && if [ ! -e \"" + dest + "\" ] || [ -L \"" + dest + "\" ]; then ln -sfn \"" + src + "\" \"" + dest + "\"; chmod +x \"" + src + "\"; fi"
+    ]);
   }
 
   // =========================================================================
@@ -568,15 +573,5 @@ BarWidget {
         item.root = root;
       }
     }
-  }
-
-  // Ensure CLI wrapper symlink exists in ~/.local/bin even when installed via 'omarchy plugin add'
-  Component.onCompleted: {
-    var src = root.ctlBinPath;
-    var dest = Quickshell.env("HOME") + "/.local/bin/vkeyboard-ctl";
-    Quickshell.execDetached([
-      "sh", "-c",
-      "mkdir -p \"$HOME/.local/bin\" && if [ ! -e \"" + dest + "\" ] || [ -L \"" + dest + "\" ]; then ln -sfn \"" + src + "\" \"" + dest + "\"; chmod +x \"" + src + "\"; fi"
-    ]);
   }
 }
