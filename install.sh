@@ -9,7 +9,11 @@ SHELL_CONFIG="${HOME}/.config/omarchy/shell.json"
 
 echo "=== Installing Virtual Keyboard & Layout Plugin ==="
 
-# 1. Ensure Directories
+# 1. Ensure Directories & Validate Target
+if [[ -z "${HOME:-}" || "${TARGET_PLUGIN_DIR}" != "${HOME}/.config/omarchy/plugins/simonez.vkeyboard" ]]; then
+  echo "Error: Invalid or insecure target plugin directory: ${TARGET_PLUGIN_DIR}" >&2
+  exit 1
+fi
 mkdir -p "${TARGET_PLUGIN_DIR}" "${TARGET_BIN_DIR}"
 
 # 2. Deploy Plugin Files
@@ -51,9 +55,11 @@ if [[ -f "$SHELL_CONFIG" ]] && command -v jq >/dev/null 2>&1; then
   if ! jq -e '.bar.layout.right[] | select((.id? == "simonez.vkeyboard") or (. == "simonez.vkeyboard"))' "$SHELL_CONFIG" >/dev/null 2>&1; then
     echo "-> Adding simonez.vkeyboard to bar.layout.right in shell.json..."
     tmp_json=$(mktemp)
+    trap 'rm -f "${tmp_json}"' EXIT INT TERM
     chmod 0600 "$tmp_json"
     # Place right near keyboard layout
     jq '.bar.layout.right = [{"id": "simonez.vkeyboard", "showBadge": true}] + .bar.layout.right' "$SHELL_CONFIG" > "$tmp_json" && mv "$tmp_json" "$SHELL_CONFIG"
+    trap - EXIT INT TERM
     echo "  [OK] shell.json updated"
   fi
 fi

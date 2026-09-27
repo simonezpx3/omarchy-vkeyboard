@@ -7,10 +7,11 @@ Optimized with single-batch Hyprland queries and high-speed in-memory RAM cache.
 
 import json
 import os
-from pathlib import Path
+import re
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 # Fast In-Memory RAM Cache in /run/user/<UID>
 _UID = os.getuid()
@@ -329,6 +330,9 @@ def get_system_keyboard_config():
 
 def set_layout(target):
     target_str = str(target).strip().lower()
+    if not re.match(r"^[a-z0-9_\-\.\:\+]+$", target_str):
+        sys.stderr.write(f"vkeyboard-ctl: warning: invalid layout target rejected: {target_str!r}\n")
+        return
     if target_str in ("next", "toggle", "cycle"):
         subprocess.run(["hyprctl", "switchxkblayout", "all", "next"], capture_output=True, timeout=2, check=False)
         _invalidate_cache()
@@ -355,14 +359,15 @@ def set_layout(target):
 
 
 def type_key(key_name, modifiers=None):
+    if not isinstance(key_name, str) or not re.match(r"^[A-Za-z0-9_\-\.\:\+]+$", key_name.strip()):
+        return
     cmd = ["wtype", "-s", "10"]
-    if modifiers:
-        for mod in modifiers:
-            cmd.extend(["-M", mod])
-    cmd.extend(["-k", key_name])
-    if modifiers:
-        for mod in reversed(modifiers):
-            cmd.extend(["-m", mod])
+    valid_mods = [m.strip() for m in modifiers if isinstance(m, str) and re.match(r"^[A-Za-z0-9_\-]+$", m.strip())] if modifiers else []
+    for mod in valid_mods:
+        cmd.extend(["-M", mod])
+    cmd.extend(["-k", key_name.strip()])
+    for mod in reversed(valid_mods):
+        cmd.extend(["-m", mod])
     subprocess.run(cmd, timeout=2, check=False)
 
 
@@ -525,9 +530,14 @@ def load_keybindings_map():
 
 
 def dispatch_shortcut(key_name, modifiers=None):
-    if not key_name:
+    if not key_name or not isinstance(key_name, str):
         return
-    mods_list = [m.lower().strip() for m in modifiers] if modifiers else []
+    key_clean = key_name.strip()
+    if not re.match(r"^[A-Za-z0-9_\-\.\:\+]+$", key_clean) and key_clean not in (" ",):
+        sys.stderr.write(f"vkeyboard-ctl: warning: invalid key name rejected: {key_name!r}\n")
+        return
+
+    mods_list = [m.lower().strip() for m in modifiers if isinstance(m, str) and re.match(r"^[A-Za-z0-9_\-]+$", m.strip())] if modifiers else []
     mod_set = set()
     for m in mods_list:
         if m in ("super", "win", "logo"):
@@ -539,7 +549,7 @@ def dispatch_shortcut(key_name, modifiers=None):
         elif m == "alt":
             mod_set.add("ALT")
 
-    key_norm = key_name.upper().strip()
+    key_norm = key_clean.upper()
     if key_norm in ("RETURN", "ENTER"):
         key_norm = "RETURN"
     elif key_norm in (" ", "SPACE"):
