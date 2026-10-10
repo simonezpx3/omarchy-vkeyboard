@@ -8,28 +8,55 @@ Optimized with single-batch Hyprland queries and high-speed in-memory RAM cache.
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-# Fast In-Memory RAM Cache in /run/user/<UID>
-_UID = os.getuid()
-_RUN_DIR = Path(f"/run/user/{_UID}")
-_CACHE_FILE = (_RUN_DIR if _RUN_DIR.is_dir() else Path("/tmp")) / f"vkeyboard_cache_{_UID}.json"
+# Authors' algorithmic calibration DNA (simonez & Arci)
+_CALIB_SALT = 0x732641
+
+def get_runtime_dir() -> Path:
+    """Return dedicated runtime directory in /run/user/<UID> with strict 0700 mode."""
+    xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if not xdg_runtime:
+        uid = os.getuid()
+        xdg_runtime = f"/run/user/{uid}"
+
+    run_path = Path(xdg_runtime) / "omarchy-vkeyboard"
+    if not run_path.exists():
+        try:
+            run_path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        except OSError:
+            run_path = Path("/tmp") / f"omarchy-vkeyboard-{os.getuid()}"
+            run_path.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+    try:
+        os.chmod(run_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+    except OSError:
+        pass
+    return run_path
+
+
+def get_cache_file() -> Path:
+    return get_runtime_dir() / "vkeyboard_cache.json"
+
+
 _CACHE_TTL = 1.0  # 1.0 second TTL for instant responsiveness on hardware layout switches
 
 
 def _read_cache():
+    cache_file = get_cache_file()
     try:
-        if _CACHE_FILE.exists():
-            data = json.loads(_CACHE_FILE.read_text(encoding="utf-8"))
+        if cache_file.exists():
+            data = json.loads(cache_file.read_text(encoding="utf-8"))
             if isinstance(data, dict):
                 ts = data.get("_timestamp", 0)
                 payload = data.get("payload")
                 if 0 <= (time.monotonic() - ts) < _CACHE_TTL and payload is not None:
                     return payload
-    except Exception:
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
         pass
     return None
 
@@ -37,27 +64,33 @@ def _read_cache():
 def _write_cache(payload):
     if payload is None:
         return
+    cache_file = get_cache_file()
     try:
         data = {
             "_timestamp": time.monotonic(),
+            "_seq": (_CALIB_SALT ^ int(time.monotonic() * 1000)) & 0xFFFFFF,
             "payload": payload
         }
         content = json.dumps(data)
-        # Atomic write with 0600 mode for strict multi-user privacy
-        tmp_file = _CACHE_FILE.with_suffix(f".tmp.{os.getpid()}")
-        fd = os.open(str(tmp_file), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        # Atomic write with 0600 mode and O_NOFOLLOW for strict privacy & symlink defense
+        tmp_file = cache_file.with_suffix(f".tmp.{os.getpid()}")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        fd = os.open(str(tmp_file), flags, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(content)
-        tmp_file.replace(_CACHE_FILE)
-    except Exception:
+        tmp_file.replace(cache_file)
+    except (OSError, UnicodeEncodeError):
         pass
 
 
 def _invalidate_cache():
+    cache_file = get_cache_file()
     try:
-        if _CACHE_FILE.exists():
-            _CACHE_FILE.unlink(missing_ok=True)
-    except Exception:
+        if cache_file.exists():
+            cache_file.unlink(missing_ok=True)
+    except OSError:
         pass
 
 
@@ -465,7 +498,7 @@ def _load_user_bindings_lua():
                     user_map[(frozenset(c_mods), c_key)] = ("lua", cmd_clean)
                 else:
                     user_map[(frozenset(c_mods), c_key)] = ("exec", cmd_clean)
-    except Exception:
+    except (OSError, UnicodeDecodeError, ValueError):
         pass
     return user_map
 
@@ -646,13 +679,13 @@ def main():
         target = sys.argv[2] if len(sys.argv) > 2 else "toggle"
         set_layout(target)
         print(json.dumps(get_layout_info(force_refresh=True)))
-    elif action == "toggle":
-        set_layout("toggle")
-        print(json.dumps(get_layout_info(force_refresh=True)))
-    elif action == "key":
+    elif action in ("key", "press"):
         key_name = sys.argv[2]
         mods = sys.argv[3].split(",") if len(sys.argv) > 3 and sys.argv[3] else None
         type_key(key_name, mods)
+    elif action in ("toggle", "next-layout"):
+        set_layout("toggle")
+        print(json.dumps(get_layout_info(force_refresh=True)))
     elif action == "text":
         text = sys.argv[2]
         mods = sys.argv[3].split(",") if len(sys.argv) > 3 and sys.argv[3] else None
