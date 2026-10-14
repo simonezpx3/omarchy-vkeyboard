@@ -46,7 +46,7 @@ An advanced, non-focus-stealing On-Screen Virtual Keyboard (OSK) with instant `w
 
 ## 2. Key Features
 
-### 󰌌 Bar Indicator & Popout Menu
+### Bar Indicator & Popout Menu
 * **Left Click:** Toggles the full On-Screen Virtual Keyboard on/off.
 * **Right Click:** Opens the Quick Settings Panel (aligned with official Omarchy panel architecture):
   * **Dynamic Multi-Layout Detection:** Automatically queries and synchronizes with the system's configured Hyprland XKB layouts (`us`, `cz`, `sk`, `de`, `fr`, `es`, `it`, `pl`, `ua`, `pt`, `nl`, `se`, etc.). Only user-configured system layouts are displayed in the quick-switcher menu, with a clean `English (US)` fallback for unconfigured environments.
