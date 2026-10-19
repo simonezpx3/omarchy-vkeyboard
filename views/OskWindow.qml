@@ -15,8 +15,8 @@ PanelWindow {
   property var root: null
 
   // Safe Fallback Style Properties when root is initializing
-  readonly property font monoFont: root ? root.monoFont : Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
-  readonly property font keyFont: root ? root.keyFont : Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
+  readonly property font monoFont: root ? root.monoFont : Qt.font({ family: Commons.Style.font && Commons.Style.font.familyMono ? Commons.Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
+  readonly property font keyFont: root ? root.keyFont : Qt.font({ family: Commons.Style.font && Commons.Style.font.familyMono ? Commons.Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
   readonly property color keyText: root ? root.keyText : Commons.Color.foreground
   readonly property color keyBg: root ? root.keyBg : Commons.Util.alpha(Commons.Color.foreground, 0.08)
   readonly property color keyHover: root ? root.keyHover : Commons.Util.alpha(Commons.Color.foreground, 0.16)
@@ -33,6 +33,11 @@ PanelWindow {
   exclusionMode: ExclusionMode.Ignore
   mask: Region { item: (root && (root.isResizingOsk || root.isMovingOsk)) ? oskRootItem : oskCard }
   anchors { top: true; bottom: true; left: true; right: true }
+
+  FontLoader {
+    id: omarchyBrandFont
+    source: Qt.resolvedUrl("../assets/omarchy-font.ttf")
+  }
 
     Item {
       id: oskRootItem

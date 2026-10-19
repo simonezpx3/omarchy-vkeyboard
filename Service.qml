@@ -185,11 +185,11 @@ Item {
   readonly property color keyPressed: Commons.Util.alpha(Commons.Color.foreground, 0.28)
   readonly property color keyBorder: Commons.Util.alpha(Commons.Color.foreground, 0.18)
   readonly property color keyText: Commons.Color.foreground
-  readonly property font monoFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
-  readonly property font keyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
-  readonly property font smallKeyFont: Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 9 })
-  readonly property int fontSmall: Math.max(10, Style.font && Style.font.bodySmall ? Style.font.bodySmall : 10)
-  readonly property int fontBody: Math.max(12, Style.font && Style.font.body ? Style.font.body : 12)
+  readonly property font monoFont: Qt.font({ family: Commons.Style.font && Commons.Style.font.familyMono ? Commons.Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
+  readonly property font keyFont: Qt.font({ family: Commons.Style.font && Commons.Style.font.familyMono ? Commons.Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
+  readonly property font smallKeyFont: Qt.font({ family: Commons.Style.font && Commons.Style.font.familyMono ? Commons.Style.font.familyMono : "JetBrains Mono NF", pixelSize: 9 })
+  readonly property int fontSmall: Math.max(10, Commons.Style.font && Commons.Style.font.bodySmall ? Commons.Style.font.bodySmall : 10)
+  readonly property int fontBody: Math.max(12, Commons.Style.font && Commons.Style.font.body ? Commons.Style.font.body : 12)
 
   // Combination Checker for System XKB Shortcuts (Alt+Shift, Ctrl+Shift, Both Shifts)
   function checkModifierCombos(): void {
@@ -369,11 +369,12 @@ Item {
     id: statusProc
     command: ["python3", root.ctlScriptPath, "status"]
     stdout: StdioCollector {
-      limit: 65536
       waitForEnd: true
       onStreamFinished: {
+        var str = (text || "").trim();
+        if (str.length === 0 || str.length > 65536) return;
         try {
-          var info = JSON.parse(text || "{}");
+          var info = JSON.parse(str);
           if (info && info.code) {
             root.currentLayout = info.code;
             root.layoutIndex = info.index !== undefined ? info.index : (info.code === "CS" ? 1 : 0);
@@ -428,7 +429,7 @@ Item {
   }
 
   IpcHandler {
-    target: "simonez.vkeyboard"
+    target: root.activePolling ? "simonez.vkeyboard" : ""
     function toggleOsk(): void { root.oskOpen = !root.oskOpen; }
     function openOsk(): void { root.oskOpen = true; }
     function closeOsk(): void { root.oskOpen = false; }

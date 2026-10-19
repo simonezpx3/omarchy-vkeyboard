@@ -21,10 +21,10 @@ BarWidget {
 
   Loader {
     id: localServiceLoader
-    active: root.shellService === null
+    active: root.shellService === null && root.opened
     sourceComponent: Component {
       Service {
-        activePolling: true
+        activePolling: false
       }
     }
   }
@@ -151,14 +151,14 @@ BarWidget {
     Row {
       id: contentRow
       anchors.centerIn: parent
-      spacing: Style.space(4)
+      spacing: Commons.Style.space(4)
 
       Text {
         anchors.verticalCenter: parent.verticalCenter
         textFormat: Text.PlainText
         text: "󰌌"
         color: root.oskOpen ? Commons.Color.accent : ((typeof root.bar !== "undefined" && root.bar && root.bar.foreground) ? root.bar.foreground : Commons.Color.foreground)
-        font.pixelSize: Style.bar.iconFont
+        font.pixelSize: Commons.Style.bar.iconFont
         font.bold: true
         renderType: Text.NativeRendering
       }
@@ -169,8 +169,8 @@ BarWidget {
         textFormat: Text.PlainText
         text: root.currentLayout
         color: (typeof root.bar !== "undefined" && root.bar && root.bar.foreground) ? root.bar.foreground : Commons.Color.foreground
-        font.family: root.svc ? root.svc.monoFont.family : Style.font.familyMono
-        font.pixelSize: Style.font.caption
+        font.family: root.svc ? root.svc.monoFont.family : Commons.Style.font.familyMono
+        font.pixelSize: Commons.Style.font.caption
         font.bold: true
         renderType: Text.NativeRendering
       }

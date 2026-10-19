@@ -50,8 +50,8 @@ Panel {
     owner: root.barIdentity
     bar: root.bar
     open: false
-    padding: Style.spacing.popupPadding
-    contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(350) * Math.max(1.0, Style.fontScale)))
+    padding: Commons.Style.spacing.popupPadding
+    contentWidth: layoutPopup.fittedContentWidth(Math.round(Commons.Style.space(350) * Math.max(1.0, Commons.Style.fontScale)))
     contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight)
 
     FocusScope {
@@ -69,7 +69,7 @@ Panel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        spacing: Style.space(12)
+        spacing: Commons.Style.space(12)
 
         // ---------- Hero: Keyboard Icon · Title + State · Actions ----------
         Item {
@@ -81,15 +81,15 @@ Panel {
             textFormat: Text.PlainText
             text: "󰌌"
             color: root.bar ? root.bar.foreground : Commons.Color.foreground
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.display
+            font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+            font.pixelSize: Commons.Style.font.display
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
           }
 
           RowLayout {
             id: heroActions
-            spacing: Style.space(8)
+            spacing: Commons.Style.space(8)
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
 
@@ -98,10 +98,10 @@ Panel {
               iconText: "󰑐"
               tooltipText: "Reset keyboard position"
               foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-              iconSize: Style.font.subtitle * 1.3
-              horizontalPadding: Style.space(5)
-              verticalPadding: Style.space(2)
+              fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              iconSize: Commons.Style.font.subtitle * 1.3
+              horizontalPadding: Commons.Style.space(5)
+              verticalPadding: Commons.Style.space(2)
               Layout.alignment: Qt.AlignVCenter
               onClicked: root.resetOskPosition()
             }
@@ -116,7 +116,7 @@ Panel {
               PanelToolTip {
                 visible: oskPowerSwitch.containsMouse
                 text: root.oskOpen ? "Hide on-screen keyboard" : "Show on-screen keyboard"
-                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
               }
             }
           }
@@ -124,11 +124,11 @@ Panel {
           Column {
             id: heroLabels
             anchors.left: heroIcon.right
-            anchors.leftMargin: Style.space(14)
+            anchors.leftMargin: Commons.Style.space(14)
             anchors.right: parent.right
-            anchors.rightMargin: heroActions.width > 0 ? heroActions.width + Style.space(12) : 0
+            anchors.rightMargin: heroActions.width > 0 ? heroActions.width + Commons.Style.space(12) : 0
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(2)
+            spacing: Commons.Style.space(2)
 
             Text {
               id: heroTitle
@@ -136,8 +136,8 @@ Panel {
               width: parent.width
               text: "Virtual Keyboard"
               color: root.bar ? root.bar.foreground : Commons.Color.foreground
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.title
+              font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              font.pixelSize: Commons.Style.font.title
               font.bold: true
               elide: Text.ElideRight
             }
@@ -148,8 +148,8 @@ Panel {
               width: parent.width
               text: (root.oskOpen ? "ACTIVE" : "STANDBY") + " · " + root.currentLayout + " (" + root.layoutFullName + ")"
               color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.4)
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption
+              font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              font.pixelSize: Commons.Style.font.caption
               font.bold: true
               font.letterSpacing: 1.2
               elide: Text.ElideRight
@@ -164,19 +164,19 @@ Panel {
 
         Column {
           width: parent.width
-          spacing: Style.space(8)
+          spacing: Commons.Style.space(8)
 
           PanelSectionHeader {
             text: "KEYBOARD LAYOUT"
             foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+            fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
           }
 
           Grid {
             id: layoutGrid
             width: parent.width
             columns: Math.min(2, Math.max(1, root.availableLayouts.length))
-            spacing: Style.space(6)
+            spacing: Commons.Style.space(6)
 
             Repeater {
               model: root.availableLayouts
@@ -186,11 +186,11 @@ Panel {
 
                 width: Math.floor((layoutGrid.width - layoutGrid.spacing * (layoutGrid.columns - 1)) / layoutGrid.columns)
                 text: (modelData.name || modelData.code) + " [" + modelData.code + "]"
-                fontSize: Style.font.bodySmall
+                fontSize: Commons.Style.font.bodySmall
                 foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-                horizontalPadding: Style.space(6)
-                verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+                fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+                horizontalPadding: Commons.Style.space(6)
+                verticalPadding: Commons.Style.spacing.controlPaddingY + Commons.Style.space(2)
                 bordered: true
                 active: root.currentLayout === modelData.code
                 selected: root.currentLayout === modelData.code
@@ -208,19 +208,19 @@ Panel {
 
         Column {
           width: parent.width
-          spacing: Style.space(8)
+          spacing: Commons.Style.space(8)
 
           PanelSectionHeader {
             text: "KEYBOARD FORMAT"
             foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+            fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
           }
 
           Grid {
             id: formatGrid
             width: parent.width
             columns: 3
-            spacing: Style.space(6)
+            spacing: Commons.Style.space(6)
 
             Repeater {
               model: root.availableFormats
@@ -230,11 +230,11 @@ Panel {
 
                 width: Math.floor((formatGrid.width - formatGrid.spacing * 2) / 3)
                 text: modelData
-                fontSize: Style.font.bodySmall
+                fontSize: Commons.Style.font.bodySmall
                 foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-                horizontalPadding: Style.space(4)
-                verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+                fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+                horizontalPadding: Commons.Style.space(4)
+                verticalPadding: Commons.Style.spacing.controlPaddingY + Commons.Style.space(2)
                 bordered: true
                 active: root.currentFormat === modelData
                 selected: root.currentFormat === modelData
@@ -252,7 +252,7 @@ Panel {
 
         Column {
           width: parent.width
-          spacing: Style.space(8)
+          spacing: Commons.Style.space(8)
 
           Item {
             width: parent.width
@@ -262,7 +262,7 @@ Panel {
               id: opacityHeader
               text: "WINDOW OPACITY"
               foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
             }
@@ -271,8 +271,8 @@ Panel {
               id: opacityValue
               textFormat: Text.PlainText
               text: Math.round(root.oskOpacity * 100) + "%"
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption
+              font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              font.pixelSize: Commons.Style.font.caption
               font.bold: true
               color: Commons.Color.accent
               anchors.right: parent.right
@@ -298,7 +298,7 @@ Panel {
 
         Column {
           width: parent.width
-          spacing: Style.space(8)
+          spacing: Commons.Style.space(8)
 
           Item {
             width: parent.width
@@ -308,7 +308,7 @@ Panel {
               id: headerToggleLabel
               text: "HEADER VISIBILITY"
               foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
-              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
             }
@@ -317,13 +317,13 @@ Panel {
               id: headerToggleRow
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(6)
+              spacing: Commons.Style.space(6)
 
               Text {
                 textFormat: Text.PlainText
                 text: root.hideHeader ? "HIDDEN" : "VISIBLE"
-                font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                font.pixelSize: Style.font.caption
+                font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
                 font.bold: true
                 color: root.hideHeader ? Commons.Color.accent : Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.4)
                 anchors.verticalCenter: parent.verticalCenter
@@ -341,7 +341,7 @@ Panel {
                 PanelToolTip {
                   visible: headerToggleSwitch.containsMouse
                   text: root.hideHeader ? "Show top header bar on keyboard" : "Hide top header bar for borderless look"
-                  fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                  fontFamily: root.bar ? root.bar.fontFamily : Commons.Style.font.family
                 }
               }
             }
@@ -355,32 +355,32 @@ Panel {
 
         Item {
           width: parent.width
-          implicitHeight: Style.space(16)
+          implicitHeight: Commons.Style.space(16)
 
           Row {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(6)
+            spacing: Commons.Style.space(6)
 
             Text {
               textFormat: Text.PlainText
               text: "v1.7.0"
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption
+              font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              font.pixelSize: Commons.Style.font.caption
               color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.6)
             }
             Text {
               textFormat: Text.PlainText
               text: "·"
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption
+              font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              font.pixelSize: Commons.Style.font.caption
               color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.6)
             }
             Text {
               textFormat: Text.PlainText
               text: "Omarchy"
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption
+              font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+              font.pixelSize: Commons.Style.font.caption
               font.bold: true
               color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.4)
             }
@@ -391,8 +391,8 @@ Panel {
             anchors.verticalCenter: parent.verticalCenter
             textFormat: Text.PlainText
             text: "[Esc: Close]"
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.caption
+            font.family: root.bar ? root.bar.fontFamily : Commons.Style.font.family
+            font.pixelSize: Commons.Style.font.caption
             color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.6)
           }
         }
