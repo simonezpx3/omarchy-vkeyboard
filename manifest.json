@@ -2,14 +2,16 @@
   "schemaVersion": 1,
   "id": "simonez.vkeyboard",
   "name": "Virtual Keyboard & Layout",
-  "version": "1.6.4",
+  "version": "1.7.0",
   "author": "simonez & Arci",
   "license": "MIT",
   "description": "On-screen virtual keyboard with instant wtype typing, multi-language XKB layout switcher, and Unified CRT Monolithic Grid styling for Omarchy.",
   "kinds": [
+    "service",
     "bar-widget"
   ],
   "entryPoints": {
+    "service": "Service.qml",
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {

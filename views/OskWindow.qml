@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Io
-import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 PanelWindow {
@@ -17,12 +17,12 @@ PanelWindow {
   // Safe Fallback Style Properties when root is initializing
   readonly property font monoFont: root ? root.monoFont : Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 11 })
   readonly property font keyFont: root ? root.keyFont : Qt.font({ family: Style.font && Style.font.familyMono ? Style.font.familyMono : "JetBrains Mono NF", pixelSize: 16, bold: true })
-  readonly property color keyText: root ? root.keyText : "#ffffff"
-  readonly property color keyBg: root ? root.keyBg : Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.08)
-  readonly property color keyHover: root ? root.keyHover : Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.16)
-  readonly property color keyPressed: root ? root.keyPressed : Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.28)
-  readonly property color keyBorder: root ? root.keyBorder : Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.18)
-  readonly property color accentColor: root ? root.accentColor : (Color.accent ? Color.accent : "#3c7fdb")
+  readonly property color keyText: root ? root.keyText : Commons.Color.foreground
+  readonly property color keyBg: root ? root.keyBg : Commons.Util.alpha(Commons.Color.foreground, 0.08)
+  readonly property color keyHover: root ? root.keyHover : Commons.Util.alpha(Commons.Color.foreground, 0.16)
+  readonly property color keyPressed: root ? root.keyPressed : Commons.Util.alpha(Commons.Color.foreground, 0.28)
+  readonly property color keyBorder: root ? root.keyBorder : Commons.Util.alpha(Commons.Color.foreground, 0.18)
+  readonly property color accentColor: root ? root.accentColor : Commons.Color.accent
   readonly property real widthScale: root ? root.widthScale : 1.0
   readonly property int baseKeyFontSize: root ? root.baseKeyFontSize : 15
   visible: root ? root.oskOpen : false
@@ -44,9 +44,9 @@ PanelWindow {
         height: root ? root.oskHeight : 285
         x: (root && root.oskX >= 0) ? root.oskX : ((oskWindow && oskWindow.width > width) ? Math.round((oskWindow.width - width) / 2) : 100)
         y: (root && root.oskY >= 0) ? root.oskY : ((oskWindow && oskWindow.height > height) ? Math.round(oskWindow.height - height - 16) : 500)
-        color: root ? root.bgOsk : "#000618"
+        color: root ? root.bgOsk : Commons.Color.background
         border.width: 1
-        border.color: root ? root.accentColor : "#3c7fdb"
+        border.color: root ? root.accentColor : Commons.Color.accent
         radius: 6
         opacity: root ? root.oskOpacity : 1.0
 
@@ -82,9 +82,9 @@ PanelWindow {
           Layout.minimumHeight: 18
           radius: 4
           clip: true
-          color: kMouse.pressed ? root.keyPressed : (kMouse.containsMouse ? root.keyHover : (isActive ? Qt.rgba(52/255, 211/255, 153/255, 0.25) : customBg))
+          color: kMouse.pressed ? root.keyPressed : (kMouse.containsMouse ? root.keyHover : (isActive ? Commons.Util.alpha(Commons.Color.accent, 0.25) : customBg))
           border.width: 1
-          border.color: isActive ? root.accentColor : (kMouse.containsMouse ? "#4b5563" : root.keyBorder)
+          border.color: isActive ? root.accentColor : (kMouse.containsMouse ? Commons.Util.alpha(Commons.Color.border, 0.6) : root.keyBorder)
 
           RowLayout {
             anchors.centerIn: parent
@@ -93,6 +93,7 @@ PanelWindow {
 
             Text {
               visible: kBtn.customIcon !== ""
+              textFormat: Text.PlainText
               Layout.alignment: Qt.AlignVCenter
               text: kBtn.customIcon
               font.family: kBtn.customIconFont !== "" ? kBtn.customIconFont : root.monoFont.family
@@ -110,17 +111,19 @@ PanelWindow {
               // Shifted character (if present)
               Text {
                 visible: textShift !== "" && textShift !== textNormal
+                textFormat: Text.PlainText
                 Layout.alignment: Qt.AlignHCenter
                 Layout.maximumWidth: parent.Layout.maximumWidth
                 text: textShift
                 font.family: root.monoFont.family
                 font.pixelSize: Math.max(6, Math.round(root.baseKeyFontSize * 0.65))
-                color: root.shiftActive ? root.accentColor : "#ffffff"
+                color: root.shiftActive ? root.accentColor : Commons.Color.foreground
                 elide: Text.ElideNone
               }
 
               // Main character / label
               Text {
+                textFormat: Text.PlainText
                 Layout.alignment: Qt.AlignHCenter
                 Layout.maximumWidth: parent.Layout.maximumWidth
                 text: {
@@ -381,6 +384,7 @@ PanelWindow {
             spacing: 6
 
             Text {
+              textFormat: Text.PlainText
               text: "\ue900"
               font.family: "omarchy"
               font.pixelSize: 12
@@ -389,6 +393,7 @@ PanelWindow {
             }
 
             Text {
+              textFormat: Text.PlainText
               text: "Omarchy"
               font.family: (omarchyBrandFont.name && omarchyBrandFont.name.length > 0) ? omarchyBrandFont.name : "Omarchy Font"
               font.pixelSize: 13
@@ -397,24 +402,18 @@ PanelWindow {
             }
 
             Text {
-              text: "s&a"
-              font.family: root.monoFont.family
-              font.pixelSize: 9
-              font.bold: true
-              color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.6)
-            }
-
-            Text {
               visible: root.oskWidth >= 880
+              textFormat: Text.PlainText
               text: "[RMB: Resize | Drag: Move]"
               font.family: root.monoFont.family
               font.pixelSize: 9
-              color: Qt.rgba(root.keyText.r, root.keyText.g, root.keyText.b, 0.5)
+              color: Commons.Util.alpha(root.keyText, 0.5)
             }
 
             // Active Modifier Badges (Separate Left & Right)
             Text {
               visible: root.shiftLActive
+              textFormat: Text.PlainText
               text: "[L-SHIFT]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -424,6 +423,7 @@ PanelWindow {
 
             Text {
               visible: root.shiftRActive
+              textFormat: Text.PlainText
               text: "[R-SHIFT]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -433,6 +433,7 @@ PanelWindow {
 
             Text {
               visible: root.capsActive
+              textFormat: Text.PlainText
               text: "[CAPS LOCK]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -442,6 +443,7 @@ PanelWindow {
 
             Text {
               visible: root.ctrlLActive
+              textFormat: Text.PlainText
               text: "[L-CTRL]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -451,6 +453,7 @@ PanelWindow {
 
             Text {
               visible: root.ctrlRActive
+              textFormat: Text.PlainText
               text: "[R-CTRL]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -460,6 +463,7 @@ PanelWindow {
 
             Text {
               visible: root.altLActive
+              textFormat: Text.PlainText
               text: "[L-ALT]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -469,6 +473,7 @@ PanelWindow {
 
             Text {
               visible: root.altRActive
+              textFormat: Text.PlainText
               text: "[R-ALT]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -478,6 +483,7 @@ PanelWindow {
 
             Text {
               visible: root.altGrActive
+              textFormat: Text.PlainText
               text: "[ALTGR ON]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -487,6 +493,7 @@ PanelWindow {
 
             Text {
               visible: root.superActive
+              textFormat: Text.PlainText
               text: "[SUPER ON]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -496,6 +503,7 @@ PanelWindow {
 
             Text {
               visible: root.fnActive && (!root.hasFRow || root.isMac)
+              textFormat: Text.PlainText
               text: "[FN ON]"
               font.family: root.monoFont.family
               font.pixelSize: 10
@@ -557,6 +565,7 @@ PanelWindow {
                 spacing: 3
                 Text {
                   id: fmtLabel
+                  textFormat: Text.PlainText
                   text: root.currentFormat + " ▾"
                   font.family: root.monoFont.family
                   font.pixelSize: 10
@@ -587,12 +596,13 @@ PanelWindow {
 
               Text {
                 id: resetIcon
+                textFormat: Text.PlainText
                 anchors.centerIn: parent
                 text: "󰑐"
                 font.family: root.monoFont.family
                 font.pixelSize: 13
                 font.bold: true
-                color: resetMouse.containsMouse ? root.accentColor : "#ffffff"
+                color: resetMouse.containsMouse ? root.accentColor : Commons.Color.foreground
                 transformOrigin: Item.Center
 
                 RotationAnimator {
@@ -659,7 +669,7 @@ PanelWindow {
             KeyBtn { textNormal: "F12"; keyCommand: "F12" }
 
             // macOS Layout Right Lock
-            KeyBtn { visible: root.isMac; textNormal: "⚲"; keyCommand: "Escape"; customWidth: 46 }
+            KeyBtn { visible: root.isMac; textNormal: "LOCK"; keyCommand: "Escape"; customWidth: 46 }
 
             // 75% Right Del
             KeyBtn { visible: root.is75; textNormal: "Del"; keyCommand: "Delete"; customWidth: 46 }
@@ -1065,10 +1075,11 @@ PanelWindow {
 
           Text {
             anchors.centerIn: parent
+            textFormat: Text.PlainText
             text: "◢"
             font.family: root.monoFont.family
             font.pixelSize: 11
-            color: cornerResizeGrip.containsMouse ? root.accentColor : Qt.rgba(root.keyText.r, root.keyText.g, root.keyText.b, 0.4)
+            color: cornerResizeGrip.containsMouse ? root.accentColor : Commons.Util.alpha(root.keyText, 0.4)
           }
 
           property real dragStartX: 0

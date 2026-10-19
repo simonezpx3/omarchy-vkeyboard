@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Io
-import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 Panel {
@@ -30,30 +30,26 @@ Panel {
   readonly property real oskOpacity: hostWidget ? hostWidget.oskOpacity : 1.0
   property bool hideHeader: hostWidget ? hostWidget.hideHeader : false
 
-  function toggleOsk() { if (hostWidget) hostWidget.oskOpen = !hostWidget.oskOpen; }
+  function toggleOsk(): void { if (hostWidget) hostWidget.toggleOsk(); }
+  function resetOskPosition(): void { if (hostWidget) hostWidget.resetOskPosition(); }
+  function setFormat(f): void { if (hostWidget) hostWidget.setFormat(f); }
+  function setLayout(c): void { if (hostWidget) hostWidget.setLayout(c); }
+  function setOskOpacity(o): void { if (hostWidget) hostWidget.setOskOpacity(o); }
 
-  function resetOskPosition() { if (hostWidget) hostWidget.resetOskPosition(); }
-  function setFormat(f) { if (hostWidget) hostWidget.setFormat(f); }
-  function setLayout(c) { if (hostWidget) hostWidget.setLayout(c); }
-  function setOskOpacity(o) { if (hostWidget) hostWidget.setOskOpacity(o); }
-
-  function open() { layoutPopup.open = true; }
-  function close() { layoutPopup.open = false; }
-  function toggle() { layoutPopup.open ? close() : open(); }
-  function closeForPopoutSwitch() { layoutPopup.closeForPopoutSwitch(); }
+  function open(): void { layoutPopup.open = true; }
+  function close(): void { layoutPopup.open = false; }
+  function toggle(): void { layoutPopup.open ? close() : open(); }
+  function closeForPopoutSwitch(): void { layoutPopup.closeForPopoutSwitch(); }
 
   readonly property bool opened: layoutPopup.open
   readonly property bool popoutSwitchClosing: layoutPopup.popoutSwitchClosing
 
-    KeyboardPanel {
+  KeyboardPanel {
     id: layoutPopup
     anchorItem: root.anchorItem
     owner: root.barIdentity
     bar: root.bar
     open: false
-    onOpenChanged: {
-      // synced with hostWidget
-    }
     padding: Style.spacing.popupPadding
     contentWidth: layoutPopup.fittedContentWidth(Math.round(Style.space(350) * Math.max(1.0, Style.fontScale)))
     contentHeight: layoutPopup.fittedContentHeight(popupColumn.implicitHeight)
@@ -84,7 +80,7 @@ Panel {
             id: heroIcon
             textFormat: Text.PlainText
             text: "󰌌"
-            color: root.bar ? root.bar.foreground : Color.foreground
+            color: root.bar ? root.bar.foreground : Commons.Color.foreground
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.display
             anchors.left: parent.left
@@ -101,7 +97,7 @@ Panel {
               id: resetAction
               iconText: "󰑐"
               tooltipText: "Reset keyboard position"
-              foreground: root.bar ? root.bar.foreground : Color.foreground
+              foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
               fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
               iconSize: Style.font.subtitle * 1.3
               horizontalPadding: Style.space(5)
@@ -113,7 +109,7 @@ Panel {
             ToggleSwitch {
               id: oskPowerSwitch
               checked: root.oskOpen
-              foreground: root.bar ? root.bar.foreground : Color.foreground
+              foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
               Layout.alignment: Qt.AlignVCenter
               onToggled: root.toggleOsk()
 
@@ -139,7 +135,7 @@ Panel {
               textFormat: Text.PlainText
               width: parent.width
               text: "Virtual Keyboard"
-              color: root.bar ? root.bar.foreground : Color.foreground
+              color: root.bar ? root.bar.foreground : Commons.Color.foreground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.title
               font.bold: true
@@ -151,7 +147,7 @@ Panel {
               textFormat: Text.PlainText
               width: parent.width
               text: (root.oskOpen ? "ACTIVE" : "STANDBY") + " · " + root.currentLayout + " (" + root.layoutFullName + ")"
-              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.4)
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.caption
               font.bold: true
@@ -163,7 +159,7 @@ Panel {
 
         // ---------- Section 1: Keyboard Layout ----------
         PanelSeparator {
-          foreground: root.bar ? root.bar.foreground : Color.foreground
+          foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
         }
 
         Column {
@@ -172,7 +168,7 @@ Panel {
 
           PanelSectionHeader {
             text: "KEYBOARD LAYOUT"
-            foreground: root.bar ? root.bar.foreground : Color.foreground
+            foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
             fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
           }
 
@@ -191,7 +187,7 @@ Panel {
                 width: Math.floor((layoutGrid.width - layoutGrid.spacing * (layoutGrid.columns - 1)) / layoutGrid.columns)
                 text: (modelData.name || modelData.code) + " [" + modelData.code + "]"
                 fontSize: Style.font.bodySmall
-                foreground: root.bar ? root.bar.foreground : Color.foreground
+                foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
                 fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
                 horizontalPadding: Style.space(6)
                 verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
@@ -207,7 +203,7 @@ Panel {
 
         // ---------- Section 2: Keyboard Format ----------
         PanelSeparator {
-          foreground: root.bar ? root.bar.foreground : Color.foreground
+          foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
         }
 
         Column {
@@ -216,7 +212,7 @@ Panel {
 
           PanelSectionHeader {
             text: "KEYBOARD FORMAT"
-            foreground: root.bar ? root.bar.foreground : Color.foreground
+            foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
             fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
           }
 
@@ -235,7 +231,7 @@ Panel {
                 width: Math.floor((formatGrid.width - formatGrid.spacing * 2) / 3)
                 text: modelData
                 fontSize: Style.font.bodySmall
-                foreground: root.bar ? root.bar.foreground : Color.foreground
+                foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
                 fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
                 horizontalPadding: Style.space(4)
                 verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
@@ -251,7 +247,7 @@ Panel {
 
         // ---------- Section 3: Window Opacity ----------
         PanelSeparator {
-          foreground: root.bar ? root.bar.foreground : Color.foreground
+          foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
         }
 
         Column {
@@ -265,7 +261,7 @@ Panel {
             PanelSectionHeader {
               id: opacityHeader
               text: "WINDOW OPACITY"
-              foreground: root.bar ? root.bar.foreground : Color.foreground
+              foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
               fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
@@ -273,11 +269,12 @@ Panel {
 
             Text {
               id: opacityValue
+              textFormat: Text.PlainText
               text: Math.round(root.oskOpacity * 100) + "%"
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.caption
               font.bold: true
-              color: Color.accent
+              color: Commons.Color.accent
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
             }
@@ -290,13 +287,13 @@ Panel {
             minimum: 0.25
             maximum: 1.0
             step: 0.05
-            onMoved: function(val) { root.setOskOpacity(val) }
+            onMoved: function(val) { root.setOskOpacity(val); }
           }
         }
 
         // ---------- Section 4: Header Appearance ----------
         PanelSeparator {
-          foreground: root.bar ? root.bar.foreground : Color.foreground
+          foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
         }
 
         Column {
@@ -310,7 +307,7 @@ Panel {
             PanelSectionHeader {
               id: headerToggleLabel
               text: "HEADER VISIBILITY"
-              foreground: root.bar ? root.bar.foreground : Color.foreground
+              foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
               fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
@@ -323,11 +320,12 @@ Panel {
               spacing: Style.space(6)
 
               Text {
+                textFormat: Text.PlainText
                 text: root.hideHeader ? "HIDDEN" : "VISIBLE"
                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                 font.pixelSize: Style.font.caption
                 font.bold: true
-                color: root.hideHeader ? Color.accent : Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+                color: root.hideHeader ? Commons.Color.accent : Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.4)
                 anchors.verticalCenter: parent.verticalCenter
               }
 
@@ -335,7 +333,7 @@ Panel {
                 id: headerToggleSwitch
                 anchors.verticalCenter: parent.verticalCenter
                 checked: root.hideHeader
-                foreground: root.bar ? root.bar.foreground : Color.foreground
+                foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
                 onToggled: {
                   if (hostWidget) hostWidget.hideHeader = !hostWidget.hideHeader;
                 }
@@ -350,9 +348,9 @@ Panel {
           }
         }
 
-        // ---------- Footer: Version, DNA & Shortcut Hint ----------
+        // ---------- Footer: Version & Shortcut Hint ----------
         PanelSeparator {
-          foreground: root.bar ? root.bar.foreground : Color.foreground
+          foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
         }
 
         Item {
@@ -365,37 +363,40 @@ Panel {
             spacing: Style.space(6)
 
             Text {
-              text: "v1.6.3"
+              textFormat: Text.PlainText
+              text: "v1.7.0"
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.caption
-              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
+              color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.6)
             }
             Text {
+              textFormat: Text.PlainText
               text: "·"
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.caption
-              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
+              color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.6)
             }
             Text {
-              text: "s&A"
+              textFormat: Text.PlainText
+              text: "Omarchy"
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.caption
               font.bold: true
-              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+              color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.4)
             }
           }
 
           Text {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
             text: "[Esc: Close]"
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.caption
-            color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
+            color: Qt.darker(root.bar ? root.bar.foreground : Commons.Color.foreground, 1.6)
           }
         }
       }
     }
   }
-
 }
