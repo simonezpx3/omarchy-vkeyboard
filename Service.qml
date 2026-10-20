@@ -228,7 +228,19 @@ Item {
     if (root.superActive) root.superActive = false;
   }
 
-  // Keystroke & Command Execution
+  // Keystroke & Command Execution (Stdin-isolated wtype piping for procfs confidentiality)
+  property var typeQueue: []
+
+  function drainTypeQueue(): void {
+    if (typeProc.running || root.typeQueue.length === 0) return;
+    var item = root.typeQueue.shift();
+    if (!item) return;
+    typeProc.pendingChar = item.char;
+    typeProc.command = item.args;
+    typeProc.stdinEnabled = true;
+    typeProc.running = true;
+  }
+
   function sendChar(char): void {
     if (!char) return;
 
@@ -250,7 +262,8 @@ Item {
       args.push("-M", "shift");
     }
 
-    args.push("--", char);
+    // Pass "-" to instruct wtype to read payload strictly from stdin (never in argv / procfs)
+    args.push("-");
 
     if (root.shiftActive && (root.ctrlActive || root.altActive)) {
       args.push("-m", "shift");
@@ -258,7 +271,10 @@ Item {
     if (root.altGrActive) args.push("-m", "altgr");
     if (root.altActive) args.push("-m", "alt");
     if (root.ctrlActive) args.push("-m", "ctrl");
-    Quickshell.execDetached(args);
+
+    if (root.typeQueue.length > 256) root.typeQueue.shift();
+    root.typeQueue.push({ char: char, args: args });
+    root.drainTypeQueue();
 
     root.resetModifiers();
   }
@@ -306,8 +322,7 @@ Item {
     if (targetKey === "Next") targetKey = "Page_Down";
 
     if (targetKey === "space" && !root.ctrlActive && !root.altActive && !root.superActive) {
-      Quickshell.execDetached(["wtype", "-s", "10", "--", " "]);
-      root.resetModifiers();
+      root.sendChar(" ");
       return;
     }
 
@@ -362,6 +377,26 @@ Item {
   function cycleLayout(): void {
     Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "next"]);
     refreshTimer.restart();
+  }
+
+  // Stdin-isolated keystroke process (closes stdin channel onStarted to signal EOF)
+  Process {
+    id: typeProc
+    property string pendingChar: ""
+    stdinEnabled: true
+    onStarted: {
+      if (pendingChar !== "") {
+        write(pendingChar);
+        pendingChar = "";
+      }
+      stdinEnabled = false;
+    }
+    onRunningChanged: {
+      if (!running) {
+        stdinEnabled = true;
+        root.drainTypeQueue();
+      }
+    }
   }
 
   // Layout Polling & Querying Process with Bounded Buffer

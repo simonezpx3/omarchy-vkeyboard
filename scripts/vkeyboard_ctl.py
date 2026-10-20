@@ -411,11 +411,11 @@ def type_text(text, modifiers=None):
     if modifiers:
         for mod in modifiers:
             cmd.extend(["-M", mod])
-    cmd.extend(["--", text])
+    cmd.append("-")
     if modifiers:
         for mod in reversed(modifiers):
             cmd.extend(["-m", mod])
-    subprocess.run(cmd, timeout=2, check=False)
+    subprocess.run(cmd, input=text, text=True, timeout=2, check=False)
 
 
 def is_terminal():
@@ -687,7 +687,10 @@ def main():
         set_layout("toggle")
         print(json.dumps(get_layout_info(force_refresh=True)))
     elif action == "text":
-        text = sys.argv[2]
+        if len(sys.argv) > 2 and sys.argv[2] == "-":
+            text = sys.stdin.read()
+        else:
+            text = sys.argv[2] if len(sys.argv) > 2 else sys.stdin.read()
         mods = sys.argv[3].split(",") if len(sys.argv) > 3 and sys.argv[3] else None
         type_text(text, mods)
     elif action == "dispatch":
