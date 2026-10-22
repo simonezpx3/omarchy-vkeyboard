@@ -19,8 +19,9 @@ if command -v shellcheck >/dev/null 2>&1; then
   shellcheck "$root/install.sh" "$root/uninstall.sh"
 fi
 
-# 4. Check python script syntax
+# 4. Check python script syntax and run security tests
 python3 -m py_compile "$root/scripts/vkeyboard_ctl.py"
+python3 "$root/tests/test_security_cache.py"
 
 # 5. Check executable permissions
 test -x "$root/install.sh"

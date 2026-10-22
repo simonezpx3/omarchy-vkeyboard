@@ -8,6 +8,7 @@ Optimized with single-batch Hyprland queries and high-speed in-memory RAM cache.
 import json
 import os
 import re
+import secrets
 import stat
 import subprocess
 import sys
@@ -16,27 +17,68 @@ from pathlib import Path
 
 # Authors' algorithmic calibration DNA (simonez & Arci)
 _CALIB_SALT = 0x732641
+MAX_CACHE_BYTES = 65536  # 64 KiB ceiling for cache documents
+
 
 def get_runtime_dir() -> Path:
-    """Return dedicated runtime directory in /run/user/<UID> with strict 0700 mode."""
+    """Return dedicated, user-owned runtime directory with strict 0700 permissions."""
+    uid = os.getuid()
+    candidates = []
+
     xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
-    if not xdg_runtime:
-        uid = os.getuid()
-        xdg_runtime = f"/run/user/{uid}"
+    if xdg_runtime:
+        candidates.append(Path(xdg_runtime) / "omarchy-vkeyboard")
+    candidates.append(Path(f"/run/user/{uid}") / "omarchy-vkeyboard")
 
-    run_path = Path(xdg_runtime) / "omarchy-vkeyboard"
-    if not run_path.exists():
+    # Safe fallbacks strictly within the user's home state/cache, never a world-writable /tmp
+    xdg_state = os.environ.get("XDG_STATE_HOME")
+    if xdg_state:
+        candidates.append(Path(xdg_state) / "omarchy-vkeyboard")
+    candidates.append(Path.home() / ".local" / "state" / "omarchy-vkeyboard")
+
+    xdg_cache = os.environ.get("XDG_CACHE_HOME")
+    if xdg_cache:
+        candidates.append(Path(xdg_cache) / "omarchy-vkeyboard")
+    candidates.append(Path.home() / ".cache" / "omarchy-vkeyboard")
+
+    last_error = None
+    for run_path in candidates:
         try:
-            run_path.mkdir(mode=0o700, parents=True, exist_ok=True)
-        except OSError:
-            run_path = Path("/tmp") / f"omarchy-vkeyboard-{os.getuid()}"
-            run_path.mkdir(mode=0o700, parents=True, exist_ok=True)
+            parent = run_path.parent
+            if not parent.exists():
+                try:
+                    parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                except OSError:
+                    continue
 
-    try:
-        os.chmod(run_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-    except OSError:
-        pass
-    return run_path
+            parent_st = os.lstat(parent)
+            if stat.S_ISLNK(parent_st.st_mode) or not stat.S_ISDIR(parent_st.st_mode) or parent_st.st_uid != uid:
+                continue
+
+            if not run_path.exists():
+                run_path.mkdir(mode=0o700, exist_ok=True)
+
+            st = os.lstat(run_path)
+            if stat.S_ISLNK(st.st_mode):
+                continue
+            if not stat.S_ISDIR(st.st_mode):
+                continue
+            if st.st_uid != uid:
+                continue
+
+            # Enforce strict 0700 permissions and verify chmod succeeded
+            if (st.st_mode & 0o077) != 0:
+                os.chmod(run_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                st = os.lstat(run_path)
+                if (st.st_mode & 0o077) != 0:
+                    continue
+
+            return run_path
+        except (OSError, PermissionError) as exc:
+            last_error = exc
+            continue
+
+    raise PermissionError(f"Failed to establish a secure runtime directory: {last_error}")
 
 
 def get_cache_file() -> Path:
@@ -47,50 +89,115 @@ _CACHE_TTL = 1.0  # 1.0 second TTL for instant responsiveness on hardware layout
 
 
 def _read_cache():
-    cache_file = get_cache_file()
     try:
-        if cache_file.exists():
-            data = json.loads(cache_file.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                ts = data.get("_timestamp", 0)
-                payload = data.get("payload")
-                if 0 <= (time.monotonic() - ts) < _CACHE_TTL and payload is not None:
-                    return payload
+        cache_file = get_cache_file()
+    except (OSError, PermissionError):
+        return None
+
+    flags = os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+
+    try:
+        fd = os.open(str(cache_file), flags)
+    except (FileNotFoundError, OSError):
+        return None
+
+    try:
+        st = os.fstat(fd)
+        # Must be a regular file: rejects FIFOs, directories, symlinks, device nodes, sockets
+        if not stat.S_ISREG(st.st_mode):
+            return None
+        # Must be owned by current user
+        if st.st_uid != os.getuid():
+            return None
+        # Must have exactly one link (no hardlink games)
+        if st.st_nlink != 1:
+            return None
+        # Must not have group or other access bits
+        if st.st_mode & 0o077:
+            return None
+        # Must not exceed size bound before reading
+        if st.st_size > MAX_CACHE_BYTES:
+            return None
+
+        os.set_blocking(fd, True)
+        data_bytes = b""
+        while len(data_bytes) <= MAX_CACHE_BYTES:
+            chunk = os.read(fd, min(65536, MAX_CACHE_BYTES + 1 - len(data_bytes)))
+            if not chunk:
+                break
+            data_bytes += chunk
+
+        if len(data_bytes) > MAX_CACHE_BYTES:
+            return None
+
+        data = json.loads(data_bytes.decode("utf-8"))
+        if isinstance(data, dict):
+            ts = data.get("_timestamp", 0)
+            payload = data.get("payload")
+            if 0 <= (time.monotonic() - ts) < _CACHE_TTL and payload is not None:
+                return payload
     except (OSError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
-        pass
+        return None
+    finally:
+        os.close(fd)
     return None
 
 
 def _write_cache(payload):
     if payload is None:
         return
-    cache_file = get_cache_file()
+    try:
+        cache_file = get_cache_file()
+    except (OSError, PermissionError):
+        return
+
     try:
         data = {
             "_timestamp": time.monotonic(),
             "_seq": (_CALIB_SALT ^ int(time.monotonic() * 1000)) & 0xFFFFFF,
-            "payload": payload
+            "payload": payload,
         }
-        content = json.dumps(data)
-        # Atomic write with 0600 mode and O_NOFOLLOW for strict privacy & symlink defense
-        tmp_file = cache_file.with_suffix(f".tmp.{os.getpid()}")
-        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        content = json.dumps(data).encode("utf-8")
+        if len(content) > MAX_CACHE_BYTES:
+            return
+
+        parent_dir = cache_file.parent
+        # Unpredictable temporary file in the secured directory
+        tmp_file = parent_dir / f".vkeyboard_cache.{secrets.token_hex(8)}.tmp"
+
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
+
         fd = os.open(str(tmp_file), flags, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        tmp_file.replace(cache_file)
-    except (OSError, UnicodeEncodeError):
+        try:
+            os.fchmod(fd, 0o600)
+            view = memoryview(content)
+            while view:
+                n = os.write(fd, view)
+                view = view[n:]
+            os.fsync(fd)
+            os.replace(str(tmp_file), str(cache_file))
+        except BaseException:
+            try:
+                os.unlink(str(tmp_file))
+            except OSError:
+                pass
+            raise
+        finally:
+            os.close(fd)
+    except (OSError, UnicodeEncodeError, ValueError):
         pass
 
 
 def _invalidate_cache():
-    cache_file = get_cache_file()
     try:
+        cache_file = get_cache_file()
         if cache_file.exists():
             cache_file.unlink(missing_ok=True)
-    except OSError:
+    except (OSError, PermissionError):
         pass
 
 
@@ -453,7 +560,11 @@ _DEFAULT_OMARCHY_BINDS = {
 def _load_user_bindings_lua():
     """Directly parse ~/.config/hypr/bindings.lua for user-defined shortcuts."""
     lua_path = Path.home() / ".config" / "hypr" / "bindings.lua"
-    if not lua_path.is_file():
+    try:
+        st = os.lstat(lua_path)
+        if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode) or st.st_size > 524288:
+            return {}
+    except OSError:
         return {}
     user_map = {}
     try:
@@ -517,6 +628,9 @@ def load_keybindings_map():
     if cache_files:
         cache_file = max(cache_files, key=os.path.getmtime)
         try:
+            st = os.lstat(cache_file)
+            if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode) or st.st_size > 524288:
+                return {}
             with open(cache_file, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.rstrip("\r\n")

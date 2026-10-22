@@ -1,6 +1,6 @@
 # Virtual Keyboard & Layout (`simonez.vkeyboard`)
 
-[![Version](https://img.shields.io/badge/version-1.7.1-3b82f6.svg)](https://github.com/simonezpx3/omarchy-vkeyboard/releases/tag/v1.7.1)
+[![Version](https://img.shields.io/badge/version-1.7.2-3b82f6.svg)](https://github.com/simonezpx3/omarchy-vkeyboard/releases/tag/v1.7.2)
 [![CI](https://github.com/simonezpx3/omarchy-vkeyboard/actions/workflows/ci.yml/badge.svg)](https://github.com/simonezpx3/omarchy-vkeyboard/actions/workflows/ci.yml)
 [![Omarchy Quattro](https://img.shields.io/badge/omarchy-quattro%20ready-10b981.svg)](https://github.com/omacom/omarchy)
 [![Wayland](https://img.shields.io/badge/wayland-layer--shell-06b6d4.svg)](https://wayland.freedesktop.org/)
